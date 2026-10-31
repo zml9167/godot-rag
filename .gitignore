@@ -1,10 +1,8 @@
 .venv/
 .vscode/
+logs/
 *.log
 docs-source/
-data/bm25_index/
-data/chunks/
-data/vector_index/
-data/symbol_index/
-docs-md/
+data/
 chunk_mismatch_reports/
+models/
