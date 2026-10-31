@@ -1,5 +1,7 @@
 # Godot 文档 RAG
 
+[中文](README.md) | [English](README.en.md)
+
 基于 Godot 文档构建本地检索索引的实验项目。处理流程为：将 RST 文档转换为 MyST Markdown，按结构切分为 chunks，再构建 BM25、API 符号和 Qdrant 向量索引。
 
 ## 项目结构
