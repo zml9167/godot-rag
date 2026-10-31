@@ -4,19 +4,26 @@ import logging
 from pathlib import Path
 from chunkana import ChunkConfig, chunk_markdown
 
+DOCS_DIR_NAME = "godot-docs-master"
+
 EVAL_RST_FENCE = re.compile(r"(?m)^```\{eval-rst\}([ \t]*)$")
 CHUNKANA_EVAL_RST_FENCE = "```eval_rst__"
 PROJECT_DIR = Path(__file__).resolve().parents[1]
-DOCS_SOURCE = PROJECT_DIR / "docs-source"
-DOCS_DIRS = ["about", "classes", "community", "engin_details", "getting_started", "totorials"]
+DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
+DOCS_DIRS = ["about", "classes", "community", "engine_details", "getting_started", "tutorials"]
 LOG_PATH = PROJECT_DIR / "logs" / "chunk.log"
 CHUNK_PATH = PROJECT_DIR / "data" / "chunks" / "chunk.jsonl"
 MISMATCH_REPORTS = PROJECT_DIR / "chunk_mismatch_reports"
 
-CHUNK_PATH.parent.mkdir(parents=True, exist_ok=True)
 MISMATCH_REPORTS.mkdir(parents=True, exist_ok=True)
+
+CHUNK_PATH.parent.mkdir(parents=True, exist_ok=True)
+CHUNK_PATH.touch()
+CHUNK_PATH.write_text('')
+
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 LOG_PATH.touch()
+LOG_PATH.write_text('')
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -41,8 +48,9 @@ def norm(text: str) -> list[str]:
 
 
 for d in DOCS_DIRS:
-    for f in (DOCS_SOURCE / d).glob('*.md'):
-        print(f)
+    doc_dir = DOCS_SOURCE / d
+    print(doc_dir)
+    for f in doc_dir.glob("**/*.md"):
         content = f.read_text(encoding="utf-8")
         if CHUNKANA_EVAL_RST_FENCE in content:
             logger.info(f"Source already contains the reserved fence marker: {f}\n")
@@ -61,7 +69,13 @@ for d in DOCS_DIRS:
             logger.warning(f"Mismatch {str(f)}")
             (MISMATCH_REPORTS / f.name).write_text(chunks_content, encoding='utf-8')
         for c in chunks:
-            header_path = c.metadata['header_path'].strip('/').split('/')
+            if isinstance(c.metadata['header_path'], list):
+                header_path = c.metadata['header_path']
+            elif isinstance(c.metadata['header_path'], str):
+                header_path = c.metadata['header_path'].strip('/').split('/')
+            else:
+                logger.error(f"Unknown header_path type {f}")
+                continue
             source = str(f.relative_to(DOCS_SOURCE))
             chunk_id = source + ':' + str(c.start_line) + '-' + str(c.end_line)
             line = {"chunk_id": chunk_id, "source": source, "header_path": header_path, "content": c.content, "start_line": c.start_line, "end_line": c.end_line, "metadata": c.metadata, "chunk_type": d}

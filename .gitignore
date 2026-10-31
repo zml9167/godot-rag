@@ -3,6 +3,7 @@
 logs/
 *.log
 docs-source/
+godot-docs-*/
 data/
 chunk_mismatch_reports/
 models/

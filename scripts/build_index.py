@@ -1,6 +1,8 @@
 import json
 import pickle
 import re
+import logging
+from torch import cuda
 from pathlib import Path
 from rank_bm25 import BM25Okapi
 from qdrant_client import QdrantClient, models
@@ -17,6 +19,20 @@ SYMBOL_INDEX_DIR = PROJECT_DIR / "data" / "symbol_index"
 QURANT_DATA_DIR = PROJECT_DIR / "data" / "qdrant_data"
 LOG_PATH = PROJECT_DIR / "logs" / "build_index.log"
 MODEL_DIR = PROJECT_DIR / "models"
+
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+LOG_PATH.touch()
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename=str(LOG_PATH),       # 输出到文件（不写则输出到 stderr）
+    filemode="a",             # 'a' 追加（默认），'w' 覆盖
+    encoding="utf-8",         # 建议显式指定，避免中文乱码
+)
+
 
 # 匹配 Godot 风格的符号：CharacterBody2D、move_and_slide、velocity 等
 SYMBOL_RE = re.compile(r'\b([A-Z][A-Za-z0-9]*|[a-z_][a-z0-9_]*)\b')
@@ -53,13 +69,13 @@ def build_bm25_index(chunks_path, index_dir):
         json.dump(chunk_ids, f, ensure_ascii=False)
     with open(index_dir / "meta.json", "w", encoding="utf-8") as f:
         json.dump({"tokenizer": "custom_v1", "count": len(chunk_ids)}, f)
-    print("bm25 index done")
+    logger.info("bm25 index done")
 
 
 def extract_symbols(chunk):
     symbols = set()
 
-    # 1. section_path 最后一级
+    # 1. header_path 最后一级
     if chunk["header_path"]:
         last = chunk["header_path"][-1]
         # 去掉括号、参数等，只保留标识符
@@ -89,7 +105,7 @@ def build_symbol_index(chunks_path: str, index_dir: str):
 
     with open(index_dir / "symbol_index.json", "w", encoding="utf-8") as f:
         json.dump(symbol_to_chunks, f, ensure_ascii=False)
-    print(f"symbol index done: {len(symbol_to_chunks)} symbols")
+    logger.info(f"symbol index done: {len(symbol_to_chunks)} symbols")
 
 
 def build_qdrant_index(chunks_path: str, qdrant_path: str):
@@ -110,24 +126,26 @@ def build_qdrant_index(chunks_path: str, qdrant_path: str):
     )
     
     # 4. 加载 embedding 模型
+    device = 'cuda' if cuda.is_available() else 'cpu'
     model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=str(MODEL_DIR))
     model = SentenceTransformer(
         model_dir,
         cache_folder=str(MODEL_DIR),
-        device="cuda"
+        device=device
     )
 
     # 5. 读取 chunks 并生成向量
+    logger.info('开始生成向量')
     points = []
     with open(chunks_path, encoding="utf-8") as f:
-        for idx, line in enumerate(f):
+        for line in f:
             c = json.loads(line)
             vector = model.encode(c["content"], normalize_embeddings=True).tolist()
 
             # 6. 构造 Point：id + vector + payload（元数据）
             points.append(
                 models.PointStruct(
-                    id=idx,  # 或使用稳定的 chunk_id 映射为整数
+                    id=c["chunk_id"],
                     vector=vector,
                     payload={
                         "chunk_id": c["chunk_id"],
@@ -145,7 +163,7 @@ def build_qdrant_index(chunks_path: str, qdrant_path: str):
         points=points,
         wait=True,  # 等待写入完成，确保数据立即可查
     )
-    print(f"已写入 {len(points)} 个 chunk 到 Qdrant")
+    logger.info(f"已写入 {len(points)} 个 chunk 到 Qdrant")
 
 
 if __name__ == "__main__":
