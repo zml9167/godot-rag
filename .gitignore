@@ -1,6 +1,10 @@
 .venv/
 .vscode/
+*.log
 docs-source/
 data/bm25_index/
 data/chunks/
 data/vector_index/
+data/symbol_index/
+docs-md/
+chunk_mismatch_reports/
