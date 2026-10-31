@@ -1,2 +1,6 @@
 .venv/
 .vscode/
+docs-source/
+data/bm25_index/
+data/chunks/
+data/vector_index/
