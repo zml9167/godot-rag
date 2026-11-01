@@ -4,12 +4,12 @@ from loguru import logger
 from pathlib import Path
 from rank_bm25 import BM25Okapi
 
+from ..paths import PROJECT_DIR
 from ..tokenizer import tokenize
 
 CURRENT_PATH = Path(__file__)
-PROJECT_DIR = CURRENT_PATH.parents[2]
 BM25_INDEX_DIR = PROJECT_DIR / "data/bm25_index"
-LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.stem}.log"
+LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
 
 
 def build(chunks_path):
