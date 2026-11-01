@@ -1,8 +1,9 @@
 .venv/
 .vscode/
+__pycache__
 logs/
-*.log
+docs-source/
 godot-docs-*/
 data/
 chunk_mismatch_reports/
-models/
+models_cache/
