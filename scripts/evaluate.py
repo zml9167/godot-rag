@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from .retrieve import retrieve
 from .ask import ask
-from .paths import PROJECT_DIR
+from .libs.utils import PROJECT_DIR
 
 QUESTIONS_PATH = PROJECT_DIR / "evaluate/questions.jsonl"
 CHUNKS_PATH = PROJECT_DIR / "data/chunks/chunks.jsonl"

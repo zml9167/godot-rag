@@ -3,7 +3,6 @@ chunkana
 loguru
 rank-bm25
 qdrant-client
-modelscope
 sentence-transformers
 openai
 ipspot

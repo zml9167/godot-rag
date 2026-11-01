@@ -6,19 +6,15 @@ from pathlib import Path
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 
-from ..ip import get_current_ip_country
-from ..paths import PROJECT_DIR
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, get_model_name
 
 NAMESPACE = uuid.NAMESPACE_DNS
 
 COLLECTION_NAME = "godot_docs"
-EMBEDDING_MODEL = "BAAI/bge-m3"
 VECTOR_DIM = 1024  # bge-m3 的输出维度，请根据实际模型确认
 
 CURRENT_PATH = Path(__file__)
-QURANT_DATA_DIR = PROJECT_DIR / "data/qdrant_data"
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
-MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
 
 
 def chunk_id_to_point_id(chunk_id: str) -> str:
@@ -47,13 +43,8 @@ def build(chunks_path: str):
     
     # 4. 加载 embedding 模型
     device = 'cuda' if cuda.is_available() else 'cpu'
-    if get_current_ip_country() == 'CN':
-        from modelscope import snapshot_download
-        model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=MODELS_CACHE_DIR)
-        print(model_dir)
-        model = SentenceTransformer(model_dir, device=device)
-    else:
-        model = SentenceTransformer(EMBEDDING_MODEL, cache_folder=MODELS_CACHE_DIR, device=device)
+    model_name = get_model_name()
+    model = SentenceTransformer(model_name, cache_folder=MODELS_CACHE_DIR, device=device)
 
     # 5. 读取 chunks 并生成向量
     logger.info('开始生成向量')
