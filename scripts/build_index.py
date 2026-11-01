@@ -1,4 +1,4 @@
-from paths import PROJECT_DIR
+from .paths import PROJECT_DIR
 from scripts.index_builder import bm25
 from scripts.index_builder import symbol
 from scripts.index_builder import qdrant
