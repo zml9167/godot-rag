@@ -56,16 +56,6 @@ def prepare_docs_repository():
     if not DOCS_DIR.is_dir():
         raise NotADirectoryError(f"Documentation path is not a directory: {DOCS_DIR}")
 
-    result = run(
-        ["git", "-C", str(DOCS_DIR), "rev-parse", "--is-inside-work-tree"],
-        capture_output=True,
-    )
-    if result.stdout.strip() != "true":
-        raise RuntimeError(
-            f"{DOCS_DIR} already exists but is not a Git repository; "
-            "move it aside or rename it before running the pipeline."
-        )
-
 
 def main():
     try:
