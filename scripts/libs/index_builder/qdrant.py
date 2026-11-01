@@ -6,18 +6,15 @@ from pathlib import Path
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 
-from ..paths import PROJECT_DIR
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, get_model_name
 
 NAMESPACE = uuid.NAMESPACE_DNS
 
 COLLECTION_NAME = "godot_docs"
-EMBEDDING_MODEL = "BAAI/bge-m3"
 VECTOR_DIM = 1024  # bge-m3 的输出维度，请根据实际模型确认
 
 CURRENT_PATH = Path(__file__)
-QURANT_DATA_DIR = PROJECT_DIR / "data/qdrant_data"
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
-MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
 
 
 def chunk_id_to_point_id(chunk_id: str) -> str:
@@ -46,11 +43,8 @@ def build(chunks_path: str):
     
     # 4. 加载 embedding 模型
     device = 'cuda' if cuda.is_available() else 'cpu'
-    model = SentenceTransformer(
-        EMBEDDING_MODEL,
-        cache_folder=str(MODELS_CACHE_DIR),
-        device=device
-    )
+    model_name = get_model_name()
+    model = SentenceTransformer(model_name, cache_folder=MODELS_CACHE_DIR, device=device)
 
     # 5. 读取 chunks 并生成向量
     logger.info('开始生成向量')
@@ -84,6 +78,6 @@ def build(chunks_path: str):
     logger.info(f"已写入 {len(points)} 个 chunk 到 Qdrant")
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     chunks = PROJECT_DIR / "data/chunks.jsonl"
     build(chunks)

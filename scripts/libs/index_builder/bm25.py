@@ -4,7 +4,7 @@ from loguru import logger
 from pathlib import Path
 from rank_bm25 import BM25Okapi
 
-from ..paths import PROJECT_DIR
+from ..utils import PROJECT_DIR
 from ..tokenizer import tokenize
 
 CURRENT_PATH = Path(__file__)
