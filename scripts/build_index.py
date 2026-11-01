@@ -18,7 +18,7 @@ BM25_INDEX_DIR = PROJECT_DIR / "data" / "bm25_index"
 SYMBOL_INDEX_DIR = PROJECT_DIR / "data" / "symbol_index"
 QURANT_DATA_DIR = PROJECT_DIR / "data" / "qdrant_data"
 LOG_PATH = PROJECT_DIR / "logs" / "build_index.log"
-MODEL_DIR = PROJECT_DIR / "models"
+CACHE_DIR = PROJECT_DIR / "models_cache"
 
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 LOG_PATH.touch()
@@ -41,7 +41,7 @@ SYMBOL_RE = re.compile(r'\b([A-Z][A-Za-z0-9]*|[a-z_][a-z0-9_]*)\b')
 STOPWORDS = {"the", "a", "an", "is", "are", "to", "of", "and", "in", "on",
              "for", "with", "this", "that", "it", "as", "be", "or", "if"}
 
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def tokenize(text):
@@ -127,10 +127,10 @@ def build_qdrant_index(chunks_path: str, qdrant_path: str):
     
     # 4. 加载 embedding 模型
     device = 'cuda' if cuda.is_available() else 'cpu'
-    model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=str(MODEL_DIR))
+    model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=str(CACHE_DIR))
     model = SentenceTransformer(
         model_dir,
-        cache_folder=str(MODEL_DIR),
+        cache_folder=str(CACHE_DIR),
         device=device
     )
 
