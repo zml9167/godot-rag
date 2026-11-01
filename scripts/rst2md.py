@@ -2,7 +2,8 @@ from multiprocessing import Pool
 from loguru import logger
 from rst_to_myst import rst_to_myst
 from pathlib import Path
-from paths import PROJECT_DIR
+
+from .paths import PROJECT_DIR
 
 DOCS_DIR_NAME = "godot-docs-master"
 

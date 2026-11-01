@@ -1,0 +1,48 @@
+{"id": "api_zh_001", "lang": "zh", "query": "move_and_slide 的 delta 参数怎么传？", "type": "api", "expected_symbol": "move_and_slide", "expected_source": "classes/class_characterbody2d.md", "expected_section": "move_and_slide"}
+{"id": "api_en_001", "lang": "en", "query": "How should I pass the delta parameter to move_and_slide?", "type": "api", "expected_symbol": "move_and_slide", "expected_source": "classes/class_characterbody2d.md", "expected_section": "move_and_slide"}
+{"id": "api_zh_002", "lang": "zh", "query": "queue_free 和 free 有什么区别？", "type": "api", "expected_symbol": "queue_free", "expected_source": "classes/class_node.md", "expected_section": "queue_free"}
+{"id": "api_en_002", "lang": "en", "query": "What is the difference between queue_free and free?", "type": "api", "expected_symbol": "queue_free", "expected_source": "classes/class_node.md", "expected_section": "queue_free"}
+{"id": "api_zh_003", "lang": "zh", "query": "CharacterBody2D 的 velocity 属性是什么类型？", "type": "api", "expected_symbol": "velocity", "expected_source": "classes/class_characterbody2d.md", "expected_section": "velocity"}
+{"id": "api_en_003", "lang": "en", "query": "What type is the velocity property of CharacterBody2D?", "type": "api", "expected_symbol": "velocity", "expected_source": "classes/class_characterbody2d.md", "expected_section": "velocity"}
+{"id": "api_zh_004", "lang": "zh", "query": "Node.add_child 的参数和返回值是什么？", "type": "api", "expected_symbol": "add_child", "expected_source": "classes/class_node.md", "expected_section": "add_child"}
+{"id": "api_en_004", "lang": "en", "query": "What are the parameters and return value of Node.add_child?", "type": "api", "expected_symbol": "add_child", "expected_source": "classes/class_node.md", "expected_section": "add_child"}
+{"id": "api_zh_005", "lang": "zh", "query": "signal 怎么连接到一个方法？", "type": "api", "expected_symbol": "connect", "expected_source": "classes/class_object.md", "expected_section": "connect"}
+{"id": "api_en_005", "lang": "en", "query": "How do I connect a signal to a method?", "type": "api", "expected_symbol": "connect", "expected_source": "classes/class_object.md", "expected_section": "connect"}
+{"id": "api_zh_006", "lang": "zh", "query": "Timer 节点怎么启动和停止？", "type": "api", "expected_symbol": "Timer", "expected_source": "classes/class_timer.md", "expected_section": "start"}
+{"id": "api_en_006", "lang": "en", "query": "How do I start and stop a Timer node?", "type": "api", "expected_symbol": "Timer", "expected_source": "classes/class_timer.md", "expected_section": "start"}
+{"id": "api_zh_007", "lang": "zh", "query": "get_node 和 $ 符号有什么区别？", "type": "api", "expected_symbol": "get_node", "expected_source": "classes/class_node.md", "expected_section": "get_node"}
+{"id": "api_en_007", "lang": "en", "query": "What is the difference between get_node and the $ syntax?", "type": "api", "expected_symbol": "get_node", "expected_source": "classes/class_node.md", "expected_section": "get_node"}
+{"id": "api_zh_008", "lang": "zh", "query": "PackedScene.instantiate 怎么用？", "type": "api", "expected_symbol": "instantiate", "expected_source": "classes/class_packedscene.md", "expected_section": "instantiate"}
+{"id": "api_en_008", "lang": "en", "query": "How do I use PackedScene.instantiate?", "type": "api", "expected_symbol": "instantiate", "expected_source": "classes/class_packedscene.md", "expected_section": "instantiate"}
+{"id": "sem_zh_001", "lang": "zh", "query": "角色老穿模、卡进墙里怎么办？", "type": "semantic", "expected_source": "tutorials/physics/using_character_body_2d.md", "expected_keywords": ["collision", "move_and_slide"]}
+{"id": "sem_en_001", "lang": "en", "query": "My character keeps clipping through walls, what should I do?", "type": "semantic", "expected_source": "tutorials/physics/using_character_body_2d.md", "expected_keywords": ["collision", "move_and_slide"]}
+{"id": "sem_zh_002", "lang": "zh", "query": "游戏存档怎么保存和读取？", "type": "semantic", "expected_source": "tutorials/io/saving_games.md", "expected_keywords": ["save", "FileAccess"]}
+{"id": "sem_en_002", "lang": "en", "query": "How do I save and load game progress?", "type": "semantic", "expected_source": "tutorials/io/saving_games.md", "expected_keywords": ["save", "FileAccess"]}
+{"id": "sem_zh_003", "lang": "zh", "query": "输入映射怎么配置？", "type": "semantic", "expected_source": "tutorials/inputs/input_examples.md", "expected_keywords": ["InputMap", "action"]}
+{"id": "sem_en_003", "lang": "en", "query": "How do I configure input mappings?", "type": "semantic", "expected_source": "tutorials/inputs/input_examples.md", "expected_keywords": ["InputMap", "action"]}
+{"id": "sem_zh_004", "lang": "zh", "query": "物理层和碰撞掩码怎么设置？", "type": "semantic", "expected_source": "tutorials/physics/physics_introduction.md", "expected_keywords": ["collision_layer", "collision_mask"]}
+{"id": "sem_en_004", "lang": "en", "query": "How do collision layers and masks work?", "type": "semantic", "expected_source": "tutorials/physics/physics_introduction.md", "expected_keywords": ["collision_layer", "collision_mask"]}
+{"id": "sem_zh_005", "lang": "zh", "query": "怎么做 UI 界面和按钮？", "type": "semantic", "expected_source": "tutorials/ui/index.md", "expected_keywords": ["Control", "Button"]}
+{"id": "sem_en_005", "lang": "en", "query": "How do I build a UI with buttons?", "type": "semantic", "expected_source": "tutorials/ui/index.md", "expected_keywords": ["Control", "Button"]}
+{"id": "sem_zh_006", "lang": "zh", "query": "信号和回调有什么区别，怎么选？", "type": "semantic", "expected_source": "tutorials/scripting/signals.md", "expected_keywords": ["signal", "connect"]}
+{"id": "sem_en_006", "lang": "en", "query": "What is the difference between signals and callbacks, and when should I use each?", "type": "semantic", "expected_source": "tutorials/scripting/signals.md", "expected_keywords": ["signal", "connect"]}
+{"id": "sem_zh_007", "lang": "zh", "query": "Autoload 单例怎么用？", "type": "semantic", "expected_source": "tutorials/scripting/singletons_autoload.md", "expected_keywords": ["autoload", "singleton"]}
+{"id": "sem_en_007", "lang": "en", "query": "How do I use Autoload singletons?", "type": "semantic", "expected_source": "tutorials/scripting/singletons_autoload.md", "expected_keywords": ["autoload", "singleton"]}
+{"id": "sem_zh_008", "lang": "zh", "query": "怎么做暂停菜单？", "type": "semantic", "expected_source": "tutorials/scripting/pausing_games.md", "expected_keywords": ["pause", "process_mode"]}
+{"id": "sem_en_008", "lang": "en", "query": "How do I implement a pause menu?", "type": "semantic", "expected_source": "tutorials/scripting/pausing_games.md", "expected_keywords": ["pause", "process_mode"]}
+{"id": "mix_zh_001", "lang": "zh", "query": "CharacterBody2D 里怎么让角色跳起来？", "type": "mixed", "expected_symbol": "CharacterBody2D", "expected_source": "classes/class_characterbody2d.md", "expected_section": "velocity"}
+{"id": "mix_en_001", "lang": "en", "query": "How do I make the character jump in CharacterBody2D?", "type": "mixed", "expected_symbol": "CharacterBody2D", "expected_source": "classes/class_characterbody2d.md", "expected_section": "velocity"}
+{"id": "mix_zh_002", "lang": "zh", "query": "AnimatedSprite2D 怎么在移动时播放走路动画？", "type": "mixed", "expected_symbol": "AnimatedSprite2D", "expected_source": "classes/class_animatedsprite2d.md", "expected_section": "play"}
+{"id": "mix_en_002", "lang": "en", "query": "How do I play a walk animation on AnimatedSprite2D while moving?", "type": "mixed", "expected_symbol": "AnimatedSprite2D", "expected_source": "classes/class_animatedsprite2d.md", "expected_section": "play"}
+{"id": "mix_zh_003", "lang": "zh", "query": "RigidBody2D 怎么被爆炸力推开？", "type": "mixed", "expected_symbol": "apply_impulse", "expected_source": "classes/class_rigidbody2d.md", "expected_section": "apply_impulse"}
+{"id": "mix_en_003", "lang": "en", "query": "How do I push a RigidBody2D away with an explosion force?", "type": "mixed", "expected_symbol": "apply_impulse", "expected_source": "classes/class_rigidbody2d.md", "expected_section": "apply_impulse"}
+{"id": "mix_zh_004", "lang": "zh", "query": "Area2D 怎么检测玩家进入触发区域？", "type": "mixed", "expected_symbol": "Area2D", "expected_source": "classes/class_area2d.md", "expected_section": "body_entered"}
+{"id": "mix_en_004", "lang": "en", "query": "How do I detect when the player enters an Area2D trigger?", "type": "mixed", "expected_symbol": "Area2D", "expected_source": "classes/class_area2d.md", "expected_section": "body_entered"}
+{"id": "unans_zh_001", "lang": "zh", "query": "Godot 怎么做区块链智能合约？", "type": "unanswerable", "expected_source": null}
+{"id": "unans_en_001", "lang": "en", "query": "How do I build blockchain smart contracts in Godot?", "type": "unanswerable", "expected_source": null}
+{"id": "unans_zh_002", "lang": "zh", "query": "Godot 怎么训练机器学习模型？", "type": "unanswerable", "expected_source": null}
+{"id": "unans_en_002", "lang": "en", "query": "How do I train a machine learning model in Godot?", "type": "unanswerable", "expected_source": null}
+{"id": "unans_zh_003", "lang": "zh", "query": "Godot 怎么连接 MySQL 数据库？", "type": "unanswerable", "expected_source": null}
+{"id": "unans_en_003", "lang": "en", "query": "How do I connect Godot to a MySQL database?", "type": "unanswerable", "expected_source": null}
+{"id": "unans_zh_004", "lang": "zh", "query": "Godot 怎么部署到 Kubernetes？", "type": "unanswerable", "expected_source": null}
+{"id": "unans_en_004", "lang": "en", "query": "How do I deploy a Godot game to Kubernetes?", "type": "unanswerable", "expected_source": null}
