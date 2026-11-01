@@ -5,7 +5,8 @@ from pathlib import Path
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from .tokenizer import tokenize
+from .libs.tokenizer import tokenize
+from .libs.utils import PROJECT_DIR, QURANT_DATA_DIR, get_model_name
 
 # ============ 全局加载（进程启动时加载一次） ============
 PROJECT_DIR = Path(__file__).resolve().parents[1]
@@ -45,8 +46,9 @@ with open(SYMBOL_INDEX_PATH, encoding="utf-8") as f:
 MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Qdrant 客户端与 embedding 模型
-QDRANT = QdrantClient(path=QDRANT_PATH)
-MODEL = SentenceTransformer(EMBEDDING_MODEL, cache_folder=str(MODELS_CACHE_DIR))
+QDRANT = QdrantClient(path=QURANT_DATA_DIR)
+
+model = SentenceTransformer(get_model_name())
 
 
 def detect_symbols(query: str) -> list[str]:
@@ -138,4 +140,5 @@ def retrieve(query: str, top_k: int = 6) -> list[dict]:
 
 if __name__ == "__main__":
     res = retrieve("什么是CharacterBody2D")
+    print("检索结果：")
     print(res)

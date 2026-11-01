@@ -1,17 +1,18 @@
 import re
 import json
+from pathlib import Path
 from loguru import logger
 from chunkana import ChunkConfig, chunk_markdown
 
-from .paths import PROJECT_DIR
+from .libs.utils import PROJECT_DIR, CHUNKS_PATH
 
 DOCS_DIR_NAME = "godot-docs-master"
 
 EVAL_RST_FENCE = re.compile(r"(?m)^```\{eval-rst\}([ \t]*)$")
 CHUNKANA_EVAL_RST_FENCE = "```eval_rst__"
+CURRENT_PATH = Path(__file__).resolve()
 DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
-LOG_PATH = PROJECT_DIR / "logs/chunk.log"
-CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
+LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.stem}.log"
 MISMATCH_REPORTS = PROJECT_DIR / "chunk_mismatch_reports"
 
 DOCS_DIRS = ["about", "classes", "community", "engine_details", "getting_started", "tutorials"]
@@ -62,7 +63,7 @@ if __name__ == "__main__":
                 else:
                     logger.error(f"Unknown header_path type {f}")
                     continue
-                source = str(f.relative_to(DOCS_SOURCE))
+                source = f.relative_to(DOCS_SOURCE).as_posix()
                 chunk_id = source + ':' + str(c.start_line) + '-' + str(c.end_line)
                 line = {"chunk_id": chunk_id, "source": source, "header_path": header_path, "content": c.content, "start_line": c.start_line, "end_line": c.end_line, "metadata": c.metadata, "chunk_type": d}
                 write_chunk(line)
