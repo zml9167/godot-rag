@@ -3,11 +3,11 @@ import json
 from loguru import logger
 from pathlib import Path
 
+from ..paths import PROJECT_DIR
 
 CURRENT_PATH = Path(__file__)
-PROJECT_DIR = CURRENT_PATH.parents[2]
 SYMBOL_INDEX_DIR = PROJECT_DIR / "data/symbol_index"
-LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.stem}.log"
+LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
 
 # 过滤掉太通用的词，避免符号索引被噪音淹没
 STOPWORDS = {"the", "a", "an", "is", "are", "to", "of", "and", "in", "on",
