@@ -1,2 +1,8 @@
 .venv/
 .vscode/
+logs/
+*.log
+godot-docs-*/
+data/
+chunk_mismatch_reports/
+models/

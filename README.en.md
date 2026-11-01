@@ -42,7 +42,7 @@ Run this command from the repository root to fetch the Godot documentation and r
 python scripts/run_pipeline.py
 ```
 
-On the first run, the script clones `godotengine/godot-docs` into `godot-docs-master/`. On later runs, it fast-forward updates that repository after confirming there are no tracked local changes. It invokes `convert.py`, `chunk.py`, and `build_index.py` using the active Python interpreter, and stops if any stage fails.
+On the first run, the script clones `godotengine/godot-docs` into `godot-docs-master/`. On later runs, it fast-forward updates that repository after confirming there are no tracked local changes. It runs the `scripts.rst2md`, `scripts.chunk_documents`, and `scripts.build_index` modules using the active Python interpreter, and stops if any stage fails.
 
 The conversion and chunking directories are configured through `DOCS_DIRS` in the scripts. Make sure the configured names match the actual directories under `godot-docs-master/`.
 
