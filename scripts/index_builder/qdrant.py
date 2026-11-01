@@ -1,4 +1,5 @@
 import json
+import uuid
 from loguru import logger
 from torch import cuda
 from pathlib import Path
@@ -8,6 +9,8 @@ from sentence_transformers import SentenceTransformer
 
 from ..paths import PROJECT_DIR
 
+NAMESPACE = uuid.NAMESPACE_DNS
+
 COLLECTION_NAME = "godot_docs"
 EMBEDDING_MODEL = "BAAI/bge-m3"
 VECTOR_DIM = 1024  # bge-m3 的输出维度，请根据实际模型确认
@@ -16,6 +19,10 @@ CURRENT_PATH = Path(__file__)
 QURANT_DATA_DIR = PROJECT_DIR / "data/qdrant_data"
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
 MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
+
+
+def chunk_id_to_point_id(chunk_id: str) -> str:
+    return str(uuid.uuid5(NAMESPACE, chunk_id))
 
 
 def build(chunks_path: str):
@@ -58,7 +65,7 @@ def build(chunks_path: str):
             # 6. 构造 Point：id + vector + payload（元数据）
             points.append(
                 models.PointStruct(
-                    id=c["chunk_id"],
+                    id=chunk_id_to_point_id(c["chunk_id"]),
                     vector=vector,
                     payload={
                         "chunk_id": c["chunk_id"],
