@@ -1,7 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
-from paths import PROJECT_DIR
+
+from .paths import PROJECT_DIR
 
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"
