@@ -28,7 +28,7 @@ def norm(text: str) -> list[str]:
     return [line for line in text.splitlines() if line.strip()]
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     logger.add(LOG_PATH)
     config = ChunkConfig(max_chunk_size = 8192,strategy_override="structural")
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
