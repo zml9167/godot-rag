@@ -5,4 +5,4 @@ rank-bm25
 qdrant-client
 modelscope
 sentence-transformers
-torch
+openai
