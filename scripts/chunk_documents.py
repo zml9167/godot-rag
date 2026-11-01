@@ -3,7 +3,7 @@ import json
 from loguru import logger
 from chunkana import ChunkConfig, chunk_markdown
 
-from paths import PROJECT_DIR
+from .paths import PROJECT_DIR
 
 DOCS_DIR_NAME = "godot-docs-master"
 

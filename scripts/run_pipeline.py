@@ -1,7 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
-from paths import PROJECT_DIR
+
+from .paths import PROJECT_DIR
 
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"
@@ -64,36 +65,6 @@ def prepare_docs_repository():
             f"{DOCS_DIR} already exists but is not a Git repository; "
             "move it aside or rename it before running the pipeline."
         )
-
-    origin = run(
-        ["git", "-C", str(DOCS_DIR), "remote", "get-url", "origin"],
-        capture_output=True,
-    ).stdout.strip()
-    if normalize_repository_url(origin) != "godotengine/godot-docs":
-        raise RuntimeError(
-            f"Unexpected origin for {DOCS_DIR}: {origin}\n"
-            f"Expected {DOCS_REPOSITORY}"
-        )
-
-    changes = run(
-        [
-            "git",
-            "-C",
-            str(DOCS_DIR),
-            "status",
-            "--porcelain",
-            "--untracked-files=no",
-        ],
-        capture_output=True,
-    ).stdout.strip()
-    if changes:
-        raise RuntimeError(
-            f"{DOCS_DIR} has tracked local changes. Commit or stash them "
-            "before updating the documentation repository."
-        )
-
-    print("Updating Godot documentation repository", flush=True)
-    run(["git", "-C", str(DOCS_DIR), "pull", "--ff-only"])
 
 
 def main():
