@@ -5,17 +5,15 @@ from pathlib import Path
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from .tokenizer import tokenize
+from .libs.tokenizer import tokenize
+from .libs.utils import PROJECT_DIR, MODELS_CACHE_DIR, QURANT_DATA_DIR, get_model_name
 
 # ============ 全局加载（进程启动时加载一次） ============
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
-QDRANT_PATH = PROJECT_DIR / "data/qdrant_data"
 BM25_DIR = PROJECT_DIR / "data/bm25_index"
 SYMBOL_INDEX_PATH = PROJECT_DIR / "data/symbol_index/symbol_index.json"
-MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
 COLLECTION_NAME = "godot_docs"
-EMBEDDING_MODEL = "BAAI/bge-m3"
 
 
 SYMBOL_PATTERN = re.compile(
@@ -42,11 +40,11 @@ with open(BM25_DIR / "chunk_ids.json", encoding="utf-8") as f:
 with open(SYMBOL_INDEX_PATH, encoding="utf-8") as f:
     SYMBOL_INDEX = json.load(f)
 
-MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Qdrant 客户端与 embedding 模型
-QDRANT = QdrantClient(path=QDRANT_PATH)
-MODEL = SentenceTransformer(EMBEDDING_MODEL, cache_folder=str(MODELS_CACHE_DIR))
+QDRANT = QdrantClient(path=QURANT_DATA_DIR)
+
+model = SentenceTransformer(get_model_name(), cache_folder=str(MODELS_CACHE_DIR))
 
 
 def detect_symbols(query: str) -> list[str]:
@@ -78,7 +76,7 @@ def symbol_lookup(symbols: list[str], top_k: int = 3) -> list[dict]:
     return hits
 
 def vector_search(query: str, top_n: int = 30) -> list[tuple[str, float]]:
-    qv = MODEL.encode(query, normalize_embeddings=True).tolist()
+    qv = model.encode(query, normalize_embeddings=True).tolist()
     res = QDRANT.query_points(
         collection_name=COLLECTION_NAME, query=qv,
         limit=top_n, with_payload=True,

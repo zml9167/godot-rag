@@ -3,7 +3,7 @@ import json
 from loguru import logger
 from pathlib import Path
 
-from ..paths import PROJECT_DIR
+from ..utils import PROJECT_DIR
 
 CURRENT_PATH = Path(__file__)
 SYMBOL_INDEX_DIR = PROJECT_DIR / "data/symbol_index"
