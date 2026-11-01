@@ -1,5 +1,5 @@
-from retrieve import retrieve
-from generate import generate_answer
+from .retrieve import retrieve
+from .generate import generate_answer
 
 def ask(query: str, top_k: int = 6) -> dict:
     # 1. 检索

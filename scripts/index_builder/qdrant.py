@@ -4,7 +4,6 @@ from loguru import logger
 from torch import cuda
 from pathlib import Path
 from qdrant_client import QdrantClient, models
-from modelscope import snapshot_download
 from sentence_transformers import SentenceTransformer
 
 from ..paths import PROJECT_DIR
@@ -47,9 +46,8 @@ def build(chunks_path: str):
     
     # 4. 加载 embedding 模型
     device = 'cuda' if cuda.is_available() else 'cpu'
-    model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=str(MODELS_CACHE_DIR))
     model = SentenceTransformer(
-        model_dir,
+        EMBEDDING_MODEL,
         cache_folder=str(MODELS_CACHE_DIR),
         device=device
     )

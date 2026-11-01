@@ -5,7 +5,7 @@ from pathlib import Path
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from tokenizer import tokenize
+from .tokenizer import tokenize
 
 # ============ 全局加载（进程启动时加载一次） ============
 PROJECT_DIR = Path(__file__).resolve().parents[1]
