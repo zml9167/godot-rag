@@ -19,7 +19,7 @@ def get_current_ip_country() -> str:
     result = get_public_ipv4(api=IPv4API.IP_API_COM, geo=True, timeout=10)
     
     if not result.get("status"):
-        print(f"Get ip information faild: {result}")
+        print(f"Get ip information failed: {result}")
         return ''
     
     data = result["data"]
