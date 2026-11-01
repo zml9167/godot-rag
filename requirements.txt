@@ -1,0 +1,7 @@
+rst-to-myst
+chunkana
+rank-bm25
+qdrant-client
+modelscope
+sentence-transformers
+torch
