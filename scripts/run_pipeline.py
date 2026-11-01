@@ -1,9 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+from paths import PROJECT_DIR
 
-
-PROJECT_DIR = Path(__file__).resolve().parents[1]
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"
 PIPELINE_MODULES = (
