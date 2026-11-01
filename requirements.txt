@@ -6,3 +6,4 @@ qdrant-client
 modelscope
 sentence-transformers
 openai
+ipspot

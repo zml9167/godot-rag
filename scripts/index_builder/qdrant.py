@@ -6,6 +6,7 @@ from pathlib import Path
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 
+from ..ip import get_current_ip_country
 from ..paths import PROJECT_DIR
 
 NAMESPACE = uuid.NAMESPACE_DNS
@@ -46,11 +47,13 @@ def build(chunks_path: str):
     
     # 4. 加载 embedding 模型
     device = 'cuda' if cuda.is_available() else 'cpu'
-    model = SentenceTransformer(
-        EMBEDDING_MODEL,
-        cache_folder=str(MODELS_CACHE_DIR),
-        device=device
-    )
+    if get_current_ip_country() == 'CN':
+        from modelscope import snapshot_download
+        model_dir = snapshot_download(EMBEDDING_MODEL, cache_dir=MODELS_CACHE_DIR)
+        print(model_dir)
+        model = SentenceTransformer(model_dir, device=device)
+    else:
+        model = SentenceTransformer(EMBEDDING_MODEL, cache_folder=MODELS_CACHE_DIR, device=device)
 
     # 5. 读取 chunks 并生成向量
     logger.info('开始生成向量')
@@ -84,6 +87,6 @@ def build(chunks_path: str):
     logger.info(f"已写入 {len(points)} 个 chunk 到 Qdrant")
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     chunks = PROJECT_DIR / "data/chunks.jsonl"
     build(chunks)
