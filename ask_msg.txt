@@ -1,8 +1,0 @@
-﻿Introduce a top-level entry point that ties together retrieval and generation
-so the RAG pipeline can answer Godot engine questions from retrieved docs.
-
-The script first retrieves chunks for the query, refuses to answer when no
-chunks are found, then calls generate.py to produce the answer. It also builds
-a clickable sources list from each unique source file and section path for the
-frontend. This glues the existing retrieve/generate modules into one usable CLI
-rather than leaving them as disconnected helpers.
