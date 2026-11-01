@@ -42,7 +42,7 @@ pip install -r requirements.txt
 python scripts/run_pipeline.py
 ```
 
-首次运行会将 `godotengine/godot-docs` 克隆到 `godot-docs-master/`；后续运行会在确认该仓库没有已跟踪的本地修改后执行 fast-forward 更新。脚本使用当前 Python 解释器依次调用 `convert.py`、`chunk.py` 和 `build_index.py`，任一阶段失败都会停止后续步骤。
+首次运行会将 `godotengine/godot-docs` 克隆到 `godot-docs-master/`；后续运行会在确认该仓库没有已跟踪的本地修改后执行 fast-forward 更新。脚本使用当前 Python 解释器依次运行 `scripts.rst2md`、`scripts.chunk_documents` 和 `scripts.build_index` 模块，任一阶段失败都会停止后续步骤。
 
 转换和切分目录由脚本中的 `DOCS_DIRS` 配置。运行前请确认它与 `godot-docs-master/` 下的实际目录名称一致。
 
