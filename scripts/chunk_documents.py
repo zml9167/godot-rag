@@ -1,14 +1,14 @@
 import re
 import json
 from loguru import logger
-from pathlib import Path
 from chunkana import ChunkConfig, chunk_markdown
+
+from paths import PROJECT_DIR
 
 DOCS_DIR_NAME = "godot-docs-master"
 
 EVAL_RST_FENCE = re.compile(r"(?m)^```\{eval-rst\}([ \t]*)$")
 CHUNKANA_EVAL_RST_FENCE = "```eval_rst__"
-PROJECT_DIR = Path(__file__).resolve().parents[1]
 DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
 LOG_PATH = PROJECT_DIR / "logs/chunk.log"
 CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
