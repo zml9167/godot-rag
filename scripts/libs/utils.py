@@ -8,6 +8,7 @@ SCRIPTS_DIR = LIBS_DIR.parent
 PROJECT_DIR = SCRIPTS_DIR.parent
 
 EMBEDDING_MODEL = "BAAI/bge-m3"
+CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
 MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
 QURANT_DATA_DIR = PROJECT_DIR / "data/qdrant_data"
 
