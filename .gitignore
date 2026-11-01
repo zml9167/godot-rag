@@ -6,4 +6,4 @@ docs-source/
 godot-docs-*/
 data/
 chunk_mismatch_reports/
-models_cache/
+models/
