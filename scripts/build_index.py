@@ -5,7 +5,7 @@ from .libs.index_builder import qdrant
 
 LOG_PATH = PROJECT_DIR / "logs/build_index.log"
 
-chunks = str(PROJECT_DIR / "data/chunks.jsonl")
+chunks = PROJECT_DIR / "data/chunks.jsonl"
 qdrant.build(chunks)
 bm25.build(chunks)
 symbol.build(chunks)
