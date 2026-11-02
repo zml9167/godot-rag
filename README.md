@@ -131,3 +131,4 @@ python -m scripts.evaluate
 - 本项目是本地实验项目，未提供 Web 服务或前端，检索与问答均通过 Python 模块调用。
 - 脚本依赖 `scripts/paths.py` 中的 `PROJECT_DIR` 定位数据目录，因此仓库内部相对路径与目录结构需要保持一致。
 - 文档内容版权归 Godot Engine 文档贡献者所有，使用时请遵循其许可证。
+- 本项目采用 [MIT 许可证](LICENSE) 许可。
