@@ -20,7 +20,7 @@ def run(f: Path):
     except AttributeError:
         log_content = str(output.warning_stream)
     if log_content.strip():
-       logger.error(log_content + '\n')
+       logger.error(log_content)
        
     output_path = f.with_name(f.stem + '.md')
     output_path.write_text(output.text, encoding='utf-8')

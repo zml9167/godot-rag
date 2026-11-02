@@ -8,6 +8,7 @@ SCRIPTS_DIR = LIBS_DIR.parent
 PROJECT_DIR = SCRIPTS_DIR.parent
 
 EMBEDDING_MODEL = "BAAI/bge-m3"
+CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
 MODELS_CACHE_DIR = PROJECT_DIR / "models_cache"
 QURANT_DATA_DIR = PROJECT_DIR / "data/qdrant_data"
 
@@ -18,7 +19,7 @@ def get_current_ip_country() -> str:
     result = get_public_ipv4(api=IPv4API.IP_API_COM, geo=True, timeout=10)
     
     if not result.get("status"):
-        print(f"Get ip information faild: {result}")
+        print(f"Get ip information failed: {result}")
         return ''
     
     data = result["data"]
