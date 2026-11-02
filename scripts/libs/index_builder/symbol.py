@@ -3,35 +3,27 @@ import json
 from loguru import logger
 from pathlib import Path
 
-from ..utils import PROJECT_DIR
+from ..utils import PROJECT_DIR, SYMBOL_INDEX_DIR, STOPWORDS, DOCS_DIRS
+from ..pattern_utils import ref_with_target_re, ref_target_bold_ident_re, void_mark_bold_ident_re, file_line_range_re
 
 CURRENT_PATH = Path(__file__)
-SYMBOL_INDEX_DIR = PROJECT_DIR / "data/symbol_index"
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
 
-# 过滤掉太通用的词，避免符号索引被噪音淹没
-STOPWORDS = {"the", "a", "an", "is", "are", "to", "of", "and", "in", "on",
-             "for", "with", "this", "that", "it", "as", "be", "or", "if"}
 
-
-
-def extract_symbols(chunk):
+def extract_symbols(chunk: dict) -> set[str]:
     symbols = set()
-
-    # 1. header_path 最后一级
-    if chunk["header_path"]:
-        last = chunk["header_path"][-1]
-        # 去掉括号、参数等，只保留标识符
-        for m in re.findall(r'[A-Za-z_][A-Za-z0-9_]*', last):
-            if m.lower() not in STOPWORDS:
-                symbols.add(m)
-
-    # 2. content 中形如 `Class.method` 或独立 API 名的 token
-    for m in re.findall(r'`([A-Za-z_][A-Za-z0-9_.]*)`', chunk["content"]):
+    source_match = re.search(file_line_range_re(), chunk["source"])
+    for i in source_match.groups() if source_match else []:
+        for j in i.split('_'):
+            if j and j.lower() not in DOCS_DIRS:
+                symbols.add(j)
+    # content 中的标题
+    for m in re.findall(ref_with_target_re(), chunk["content"]):
         symbols.add(m)
-    for m in re.findall(r'\b([A-Z][a-z]+[A-Za-z0-9]*)\b', chunk["content"]):
+    for m in re.findall(ref_target_bold_ident_re(), chunk["content"]):
         symbols.add(m)
-
+    for m in re.findall(void_mark_bold_ident_re(), chunk["content"]):
+        symbols.add(m)
     return {s for s in symbols if s.lower() not in STOPWORDS and len(s) >= 3}
 
 

@@ -1,12 +1,10 @@
 import json
 import uuid
 from loguru import logger
-from torch import cuda
 from pathlib import Path
 from qdrant_client import QdrantClient, models
-from sentence_transformers import SentenceTransformer
 
-from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, get_model_name
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, get_model
 
 NAMESPACE = uuid.NAMESPACE_DNS
 
@@ -42,9 +40,7 @@ def build(chunks_path: str):
     )
     
     # 4. 加载 embedding 模型
-    device = 'cuda' if cuda.is_available() else 'cpu'
-    model_name = get_model_name()
-    model = SentenceTransformer(model_name, cache_folder=MODELS_CACHE_DIR, device=device)
+    model = get_model()
 
     # 5. 读取 chunks 并生成向量
     logger.info('开始生成向量')

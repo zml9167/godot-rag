@@ -6,17 +6,17 @@ SYSTEM_PROMPT = """你是一个 Godot 引擎文档助手。请严格根据下面
 1. 只使用提供的文档片段中的信息，不要依赖你自己的知识。
 2. 如果文档片段中没有足够的信息回答问题，直接说“文档中没有找到相关内容”，不要编造。
 3. 回答时用中文，但 API 名称、类名、方法名保留英文原文。
-4. 每个关键结论后面用 [来源: section_path] 标注出处。
+4. 每个关键结论后面用 [来源: header_path] 标注出处。
 5. 如果涉及代码，给出完整的 GDScript 示例。"""
 
 def build_prompt(query: str, chunks: list[dict]) -> list[dict]:
     # 把检索到的 chunk 拼成带编号的参考资料
     context_parts = []
     for i, c in enumerate(chunks, 1):
-        source = " > ".join(c["section_path"]) if c["section_path"] else c["source_file"]
+        source = " > ".join(c["header_path"]) if c["header_path"] else c["source"]
         context_parts.append(
             f"[片段 {i}] 来源: {source}\n"
-            f"文件: {c['source_file']}\n"
+            f"文件: {c['source']}\n"
             f"内容:\n{c['content']}\n"
         )
     context = "\n---\n".join(context_parts)
@@ -40,7 +40,7 @@ def build_prompt(query: str, chunks: list[dict]) -> list[dict]:
     ]
 
 client = OpenAI(
-    api_key="your-api-key",
+    api_key="sk-609585db06d242acb9fdf1753d6a405a",
     base_url="https://api.deepseek.com",  # 或其他兼容接口
 )
 
