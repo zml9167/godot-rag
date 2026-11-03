@@ -19,12 +19,12 @@ def ask(query: str, top_k: int = 6) -> dict:
     sources = []
     seen = set()
     for c in chunks:
-        key = c["source_file"]
+        key = c["source"]
         if key not in seen:
             seen.add(key)
             sources.append({
-                "file": c["source_file"],
-                "section": " > ".join(c["section_path"]),
+                "file": c["source"],
+                "section": " > ".join(c["header_path"]),
                 "chunk_id": c["chunk_id"],
             })
 

@@ -4,7 +4,7 @@ from pathlib import Path
 from loguru import logger
 from chunkana import ChunkConfig, chunk_markdown
 
-from .libs.utils import PROJECT_DIR, CHUNKS_PATH
+from .libs.utils import PROJECT_DIR, CHUNKS_PATH, DOCS_DIRS
 
 DOCS_DIR_NAME = "godot-docs-master"
 
@@ -14,8 +14,6 @@ CURRENT_PATH = Path(__file__).resolve()
 DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.stem}.log"
 MISMATCH_REPORTS = PROJECT_DIR / "chunk_mismatch_reports"
-
-DOCS_DIRS = ["about", "classes", "community", "engine_details", "getting_started", "tutorials"]
 
 MISMATCH_REPORTS.mkdir(parents=True, exist_ok=True)
 

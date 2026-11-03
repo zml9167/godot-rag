@@ -131,3 +131,4 @@ Failures are written to `evaluate/misses.json`. Each line of the question set is
 - This is a local experimental project with no web service or frontend; retrieval and QA are invoked through Python modules.
 - Scripts locate data through `PROJECT_DIR` in `scripts/paths.py`, so keep the relative paths and directory layout consistent.
 - Documentation content is copyright its Godot Engine documentation contributors; follow their license when reusing it.
+- This project is licensed under the [MIT License](LICENSE).

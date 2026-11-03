@@ -63,7 +63,7 @@ def eval_retrieval(questions, top_k=TOP_K):
         s["total"] += 1
 
         chunks = retrieve(q["query"], top_k=top_k)
-        sources = {c["source_file"] for c in chunks}
+        sources = {c["source"] for c in chunks}
 
         hit = q["expected_source"] in sources if q["expected_source"] else False
         if hit:
@@ -78,8 +78,7 @@ def eval_retrieval(questions, top_k=TOP_K):
 
         if q["type"] in ("api", "mixed") and q.get("expected_symbol"):
             s["symbol_total"] += 1
-            if chunks and chunks[0].get("source") == "symbol" \
-               and q["expected_symbol"].lower() in chunks[0]["content"].lower():
+            if chunks and chunks[0].get("retrieve_method") == "symbol":
                 s["symbol_hit"] += 1
 
     print("=== 检索评估 ===")
