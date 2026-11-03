@@ -60,12 +60,12 @@ def get_model():
         MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
         if get_current_ip_country() == 'CN':
             model_dir = load_model_from_modelscope(EMBEDDING_MODEL)
-            return SentenceTransformer(model_dir, device=device)
-        return EMBEDDING_MODEL
+            return SentenceTransformer(str(model_dir), device=device)
+        return SentenceTransformer(EMBEDDING_MODEL, device=device, cache_folder=str(MODELS_CACHE_DIR))
 
     if (MODELS_CACHE_DIR / "models/BAAI--bge-m3").exists():
         model_dir = load_model_from_modelscope(EMBEDDING_MODEL)
-        return SentenceTransformer(model_dir, device=device)
+        return SentenceTransformer(str(model_dir), device=device)
     
     if (MODELS_CACHE_DIR / "BAAI--bge-m3").exists():
         model_dir = MODELS_CACHE_DIR / "models/BAAI--bge-m3"
@@ -73,6 +73,6 @@ def get_model():
     
     if get_current_ip_country() == 'CN':
         model_dir = load_model_from_modelscope(EMBEDDING_MODEL)
-        return SentenceTransformer(model_dir, device=device)
+        return SentenceTransformer(str(model_dir), device=device)
     
-    return SentenceTransformer(EMBEDDING_MODEL, device=device)
+    return SentenceTransformer(EMBEDDING_MODEL, device=device, cache_folder=str(MODELS_CACHE_DIR))
