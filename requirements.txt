@@ -1,3 +1,4 @@
+sphinx==7.3.7
 rst-to-myst
 chunkana
 loguru
