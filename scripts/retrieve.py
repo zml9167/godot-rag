@@ -54,7 +54,7 @@ def get_symbol_order(sym: str, chunk) -> tuple[int, int]:
         order_chunk_type = SYMBOL_ORDER.index(chunk["chunk_type"])
 
     order_header_path = True
-    if is_instance(chunk["header_path"], list):
+    if isinstance(chunk["header_path"], list):
         for h in chunk["header_path"]:
             if sym in h: # 符号精确检索区分大小写
                 order_header_path = False
@@ -62,12 +62,11 @@ def get_symbol_order(sym: str, chunk) -> tuple[int, int]:
 
     order_source = sym not in chunk["source"]
 
-    order_content = not re.search(not(
-                                      ref_with_target_re(sym), chunk["content"]) \
-                                      or re.search(ref_target_bold_ident_re(sym), chunk["content"]) \
-                                      or re.search(void_mark_bold_ident_re(sym), chunk["content"]
-                                     )
-                                 )
+    order_content = not (
+                         re.search(ref_with_target_re(sym), chunk["content"])
+                         or re.search(ref_target_bold_ident_re(sym), chunk["content"]) \
+                         or re.search(void_mark_bold_ident_re(sym), chunk["content"])
+                        )
     return (order_chunk_type, order_source, order_content, order_header_path)
 
 

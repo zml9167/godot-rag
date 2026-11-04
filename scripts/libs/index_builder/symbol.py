@@ -14,7 +14,7 @@ def extract_symbols(chunk: dict) -> set[str]:
     symbols = set()
 
     # classes
-    if chunk["chunk_type" == "clsses"]:
+    if chunk["chunk_type"] == "clsses":
         source_split = chunk["source"].split("_")
         if len(source_split) > 1:
             symbols.add(j)
