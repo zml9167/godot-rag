@@ -46,7 +46,7 @@
 pip install -r requirements.txt
 ```
 
-`requirements.txt` 不包含 PyTorch，请根据本机 CUDA 环境另行安装。建索引时会自动选择设备：有可用 GPU 时使用 `cuda`，否则回退到 `cpu`。
+`requirements.txt` 不包含 PyTorch，请根据本机 CUDA 环境另行安装。建索引时默认只使用 GPU（`cuda`），并在加载模型后、生成向量前打印当前设备；GPU 不可用时直接报错，不会静默回退到 CPU。启动时会先在子进程中运行一次 GPU 自检；如果 ROCm 版 PyTorch 没有为当前 GPU 架构（例如 `gfx1031`）编译内核，会自动设置兼容的 `HSA_OVERRIDE_GFX_VERSION`。如果确实需要 CPU，必须显式设置 `GODOT_RAG_ALLOW_CPU=1`。CPU 模式下的批大小可通过 `GODOT_RAG_EMBED_BATCH_SIZE` 调整（默认 16），单批 token 预算可通过 `GODOT_RAG_EMBED_MAX_BATCH_TOKENS` 调整（GPU 默认 8192，CPU 默认 16384），长序列截断长度可通过 `GODOT_RAG_MAX_SEQ_LENGTH` 调整（默认 2048）。
 
 嵌入模型为 `BAAI/bge-m3`，首次使用时会按当前 IP 所属国家选择下载源：中国大陆（`CN`）通过 ModelScope 下载，其他地区通过 Hugging Face 下载，缓存目录为 `models_cache/`。
 

@@ -46,7 +46,7 @@ Create a virtual environment at the repository root and install the dependencies
 pip install -r requirements.txt
 ```
 
-`requirements.txt` does not include PyTorch, so install a build compatible with your local CUDA environment separately. The device is chosen automatically when building indexes: `cuda` when a GPU is available, otherwise `cpu`.
+`requirements.txt` does not include PyTorch, so install a build compatible with your local CUDA environment separately. Index building uses the GPU (`cuda`) by default and prints the active device after loading the model, before encoding; if the GPU is unavailable it fails instead of silently falling back to CPU. A short GPU smoke test runs in a subprocess at startup, and if the ROCm PyTorch build lacks kernels for the current architecture (for example `gfx1031`), a compatible `HSA_OVERRIDE_GFX_VERSION` is set automatically. CPU mode requires an explicit `GODOT_RAG_ALLOW_CPU=1`. In CPU mode the embedding batch size can be changed with `GODOT_RAG_EMBED_BATCH_SIZE` (default 16), the per-batch token budget with `GODOT_RAG_EMBED_MAX_BATCH_TOKENS` (default 8192 on GPU, 16384 on CPU), and the long-sequence truncation limit with `GODOT_RAG_MAX_SEQ_LENGTH` (default 2048).
 
 The embedding model is `BAAI/bge-m3`. On first use, the download source depends on the current IP's country: mainland China (`CN`) uses ModelScope, other regions use Hugging Face, and files are cached under `models_cache/`.
 

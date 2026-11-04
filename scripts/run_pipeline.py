@@ -2,15 +2,31 @@ import subprocess
 import sys
 from pathlib import Path
 
+import portalocker
+
 from .libs.utils import PROJECT_DIR
 
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"
+LOCK_PATH = PROJECT_DIR / "data/.pipeline.lock"
 PIPELINE_MODULES = (
     "scripts.rst2md",
     "scripts.chunk_documents",
     "scripts.build_index",
 )
+
+
+def acquire_pipeline_lock():
+    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock = portalocker.Lock(str(LOCK_PATH), mode="w", timeout=0)
+    try:
+        lock.acquire()
+    except portalocker.exceptions.LockException as error:
+        raise RuntimeError(
+            "Another pipeline run is already in progress "
+            f"(lock file: {LOCK_PATH}). Wait for it to finish first."
+        ) from error
+    return lock
 
 
 def run(command, cwd=PROJECT_DIR, *, capture_output=False):
@@ -59,6 +75,12 @@ def prepare_docs_repository():
 
 def main():
     try:
+        lock = acquire_pipeline_lock()
+    except (OSError, RuntimeError) as error:
+        print(f"Pipeline stopped: {error}", file=sys.stderr)
+        return 1
+
+    try:
         validate_pipeline_scripts()
         prepare_docs_repository()
 
@@ -76,6 +98,8 @@ def main():
     except (FileNotFoundError, NotADirectoryError, RuntimeError) as error:
         print(f"Pipeline stopped: {error}", file=sys.stderr)
         return 1
+    finally:
+        lock.release()
 
     print("\nPipeline completed successfully.", flush=True)
     return 0
