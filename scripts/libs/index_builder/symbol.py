@@ -12,13 +12,11 @@ LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.l
 
 def extract_symbols(chunk: dict) -> set[str]:
     symbols = set()
-
-    # classes
-    if chunk["chunk_type"] == "clsses":
-        source_split = chunk["source"].split("_")
-        if len(source_split) > 1:
-            symbols.add(j)
-
+    source_match = re.search(file_line_range_re(), chunk["source"])
+    for i in source_match.groups() if source_match else []:
+        for j in i.split('_'):
+            if j and j.lower() not in DOCS_DIRS:
+                symbols.add(j)
     # content 中的标题
     for m in re.findall(ref_with_target_re(), chunk["content"]):
         symbols.add(m)
@@ -37,6 +35,7 @@ def build(chunks_path: str):
     with open(chunks_path, encoding="utf-8") as f:
         for line in f:
             c = json.loads(line)
+            # 保留完整引用；查询时在 symbol_lookup 中按 chunk_id 去重
             for sym in extract_symbols(c):
                 symbol_to_chunks.setdefault(sym.lower(), []).append(c["chunk_id"])
 

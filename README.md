@@ -46,9 +46,13 @@
 pip install -r requirements.txt
 ```
 
-`requirements.txt` 不包含 PyTorch，请根据本机 CUDA 环境另行安装。建索引时默认只使用 GPU（`cuda`），并在加载模型后、生成向量前打印当前设备；GPU 不可用时直接报错，不会静默回退到 CPU。启动时会先在子进程中运行一次 GPU 自检；如果 ROCm 版 PyTorch 没有为当前 GPU 架构（例如 `gfx1031`）编译内核，会自动设置兼容的 `HSA_OVERRIDE_GFX_VERSION`。如果确实需要 CPU，必须显式设置 `GODOT_RAG_ALLOW_CPU=1`。CPU 模式下的批大小可通过 `GODOT_RAG_EMBED_BATCH_SIZE` 调整（默认 16），单批 token 预算可通过 `GODOT_RAG_EMBED_MAX_BATCH_TOKENS` 调整（GPU 默认 8192，CPU 默认 16384），长序列截断长度可通过 `GODOT_RAG_MAX_SEQ_LENGTH` 调整（默认 2048）。
+`requirements.txt` 不包含 PyTorch，请根据本机 CUDA 环境另行安装。建索引时默认只使用 GPU（`cuda`），并在加载模型后、生成向量前打印当前设备；GPU 不可用时直接报错，不会静默回退到 CPU。启动时会先在子进程中运行一次 GPU 自检；如果 ROCm 版 PyTorch 没有为当前 GPU 架构（例如 `gfx1031`）编译内核，会自动设置兼容的 `HSA_OVERRIDE_GFX_VERSION`。如果确实需要 CPU，必须显式设置 `GODOT_RAG_ALLOW_CPU=1`。批大小可通过 `GODOT_RAG_EMBED_BATCH_SIZE` 调整（默认 32），单批 token 预算可通过 `GODOT_RAG_EMBED_MAX_BATCH_TOKENS` 调整（默认 4096，按 `max_len * batch_count` 计算），长序列截断长度可通过 `GODOT_RAG_MAX_SEQ_LENGTH` 调整（默认 4096）。
 
 嵌入模型为 `BAAI/bge-m3`，首次使用时会按当前 IP 所属国家选择下载源：中国大陆（`CN`）通过 ModelScope 下载，其他地区通过 Hugging Face 下载，缓存目录为 `models_cache/`。
+
+> `transformers` 4.57 在 `torch < 2.6` 下会拒绝 `torch.load` 旧式 `.bin` 权重（CVE-2025-32434）。首次运行若模型目录只有 `pytorch_model.bin`，脚本会自动生成 `model.safetensors`：需要额外约 2.2 GB 磁盘空间，耗时约 2–3 分钟；转换完成后再次启动不会重复执行。若使用较新的 CUDA 环境，也可以直接安装 `torch >= 2.6` 来跳过该转换。
+>
+> 在部分 ROCm 环境上，少数输入长度会让 GPU 输出 NaN；建索引时会自动改用 CPU 重新计算这些 chunk，无需手动处理。
 
 > 所有命令都需要在仓库根目录执行，并使用 `python -m scripts.<module>` 形式。脚本使用包内相对导入，直接 `python scripts/xxx.py` 会因相对导入失败。
 

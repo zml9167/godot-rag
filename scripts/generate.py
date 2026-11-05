@@ -40,7 +40,7 @@ def build_prompt(query: str, chunks: list[dict]) -> list[dict]:
     ]
 
 client = OpenAI(
-    api_key="sk-609585db06d242acb9fdf1753d6a405a",
+    api_key="your_api_key_here",  # 替换为你的 API Key
     base_url="https://api.deepseek.com",  # 或其他兼容接口
 )
 
