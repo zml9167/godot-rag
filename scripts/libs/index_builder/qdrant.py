@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from loguru import logger
 from pathlib import Path
@@ -13,9 +14,11 @@ NAMESPACE = uuid.NAMESPACE_DNS
 COLLECTION_NAME = "godot_docs"
 VECTOR_DIM = 1024  # bge-m3 的输出维度，请根据实际模型确认
 UPSERT_BATCH_SIZE = 256
-# 按 token 预算组 batch，兼顾吞吐和显存；8192 tokens 的单条会单独成批
-TOKEN_BUDGET = 4096
-MAX_BATCH_SIZE = 32
+
+# 按 token 预算组 batch，兼顾吞吐和显存。
+# 默认值与 max_seq_length 的默认值（4096）对齐，可通过环境变量调整。
+TOKEN_BUDGET = int(os.environ.get("GODOT_RAG_EMBED_MAX_BATCH_TOKENS", "4096"))
+MAX_BATCH_SIZE = int(os.environ.get("GODOT_RAG_EMBED_BATCH_SIZE", "32"))
 
 CURRENT_PATH = Path(__file__)
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
@@ -23,6 +26,20 @@ LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.l
 
 def chunk_id_to_point_id(chunk_id: str) -> str:
     return str(uuid.uuid5(NAMESPACE, chunk_id))
+
+
+def _to_point(chunk: dict, vector: list[float]) -> models.PointStruct:
+    return models.PointStruct(
+        id=chunk_id_to_point_id(chunk["chunk_id"]),
+        vector=vector,
+        payload={
+            "chunk_id": chunk["chunk_id"],
+            "source": chunk["source"],
+            "header_path": chunk["header_path"],
+            "chunk_type": chunk["chunk_type"],
+            "content": chunk["content"],
+        },
+    )
 
 
 def build(chunks_path: str):
@@ -44,12 +61,12 @@ def build(chunks_path: str):
             distance=models.Distance.COSINE,
         ),
     )
-    
+
     # 4. 加载 embedding 模型
     model = get_model()
 
-    # 5. 读取 chunks，先统计 token 长度
-    logger.info('读取 chunks 并统计 token 长度')
+    # 5. 读取 chunks，先统计真实 token 长度
+    logger.info("读取 chunks 并统计 token 长度")
     chunks = []
     with open(chunks_path, encoding="utf-8") as f:
         for line in f:
@@ -91,8 +108,9 @@ def build(chunks_path: str):
         groups.append(current)
 
     logger.info(
-        f"共 {len(chunks)} 个 chunk，{len(groups)} 个编码批次，"
-        f"token budget={TOKEN_BUDGET}，max batch={MAX_BATCH_SIZE}"
+        f"开始生成向量（device={model.device}, max_seq_length={model.max_seq_length}, "
+        f"chunks={len(chunks)}, batches={len(groups)}, "
+        f"token_budget={TOKEN_BUDGET}, max_batch={MAX_BATCH_SIZE}）"
     )
 
     points = []
@@ -120,7 +138,7 @@ def build(chunks_path: str):
     def encode_on_cpu(text):
         nonlocal cpu_model
         if cpu_model is None:
-            cpu_model = get_model(device='cpu')
+            cpu_model = get_model(device="cpu")
         return cpu_model.encode(
             text, normalize_embeddings=True, show_progress_bar=False
         )
@@ -158,22 +176,8 @@ def build(chunks_path: str):
                     skipped += 1
                     continue
 
-            # 7. 构造 Point：id + vector + payload（元数据）
-            points.append(
-                models.PointStruct(
-                    id=chunk_id_to_point_id(c["chunk_id"]),
-                    vector=vector.tolist(),
-                    payload={
-                        "chunk_id": c["chunk_id"],
-                        "source": c["source"],
-                        "header_path": c["header_path"],
-                        "chunk_type": c["chunk_type"],
-                        "content": c["content"],
-                    },
-                )
-            )
-
-            # 8. 分批写入，避免中途失败时丢失全部进度
+            # 7. 构造 Point 并分批写入
+            points.append(_to_point(c, vector.tolist()))
             if len(points) >= UPSERT_BATCH_SIZE:
                 flush_points()
 

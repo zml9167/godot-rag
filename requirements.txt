@@ -2,6 +2,7 @@ sphinx==7.3.7
 rst-to-myst
 chunkana
 loguru
+portalocker
 rank-bm25
 qdrant-client
 # torch 2.4 (ROCm) 只兼容 transformers 4.x；5.x 强制要求 torch>=2.6。
