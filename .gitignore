@@ -8,5 +8,6 @@ data/
 chunk_mismatch_reports/
 models_cache/
 *.ps1
+*.whl
 _temp*
 misses.json

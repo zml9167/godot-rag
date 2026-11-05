@@ -50,6 +50,10 @@ pip install -r requirements.txt
 
 嵌入模型为 `BAAI/bge-m3`，首次使用时会按当前 IP 所属国家选择下载源：中国大陆（`CN`）通过 ModelScope 下载，其他地区通过 Hugging Face 下载，缓存目录为 `models_cache/`。
 
+> `transformers` 4.57 在 `torch < 2.6` 下会拒绝 `torch.load` 旧式 `.bin` 权重（CVE-2025-32434）。首次运行若模型目录只有 `pytorch_model.bin`，脚本会自动生成 `model.safetensors`：需要额外约 2.2 GB 磁盘空间，耗时约 2–3 分钟；转换完成后再次启动不会重复执行。若使用较新的 CUDA 环境，也可以直接安装 `torch >= 2.6` 来跳过该转换。
+>
+> 在部分 ROCm 环境上，少数输入长度会让 GPU 输出 NaN；建索引时会自动改用 CPU 重新计算这些 chunk，无需手动处理。
+
 > 所有命令都需要在仓库根目录执行，并使用 `python -m scripts.<module>` 形式。脚本使用包内相对导入，直接 `python scripts/xxx.py` 会因相对导入失败。
 
 ## 构建索引

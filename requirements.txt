@@ -4,6 +4,10 @@ chunkana
 loguru
 rank-bm25
 qdrant-client
-sentence-transformers
+# torch 2.4 (ROCm) 只兼容 transformers 4.x；5.x 强制要求 torch>=2.6。
+# transformers 4.57 在 torch<2.6 下拒绝加载 .bin，首次运行会自动转换为 safetensors。
+transformers==4.57.6
+sentence-transformers==5.1.2
+safetensors
 openai
 ipspot

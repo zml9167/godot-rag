@@ -50,6 +50,10 @@ pip install -r requirements.txt
 
 The embedding model is `BAAI/bge-m3`. On first use, the download source depends on the current IP's country: mainland China (`CN`) uses ModelScope, other regions use Hugging Face, and files are cached under `models_cache/`.
 
+> With `torch < 2.6`, `transformers` 4.57 refuses to `torch.load` legacy `.bin` weights (CVE-2025-32434). If the model directory only contains `pytorch_model.bin`, the script automatically generates `model.safetensors` on first use: this needs roughly 2.2 GB of extra disk space and takes about 2–3 minutes, and is not repeated afterwards. On newer CUDA environments you can also install `torch >= 2.6` to skip the conversion.
+>
+> On some ROCm setups, a few input lengths can make the GPU emit NaN; indexing automatically recomputes those chunks on the CPU, so no manual intervention is needed.
+
 > Run every command from the repository root using `python -m scripts.<module>`. The scripts use package-relative imports, so running them as `python scripts/xxx.py` will fail.
 
 ## Building the Index
