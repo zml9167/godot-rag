@@ -11,3 +11,4 @@ models_cache/
 *.whl
 _temp*
 misses.json
+.python-version
