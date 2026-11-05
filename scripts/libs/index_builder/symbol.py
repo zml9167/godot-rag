@@ -35,9 +35,9 @@ def build(chunks_path: str):
     with open(chunks_path, encoding="utf-8") as f:
         for line in f:
             c = json.loads(line)
-            # extract_symbols 区分大小写；转小写后再去重，避免同一个 chunk 重复挂到同一符号下
-            for sym in {s.lower() for s in extract_symbols(c)}:
-                symbol_to_chunks.setdefault(sym, []).append(c["chunk_id"])
+            # 保留完整引用；查询时在 symbol_lookup 中按 chunk_id 去重
+            for sym in extract_symbols(c):
+                symbol_to_chunks.setdefault(sym.lower(), []).append(c["chunk_id"])
 
     with open(SYMBOL_INDEX_DIR / "symbol_index.json", "w", encoding="utf-8") as f:
         json.dump(symbol_to_chunks, f, ensure_ascii=False)

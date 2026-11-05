@@ -239,30 +239,19 @@ def _validate_symbol(chunks, errors: ValidationErrors):
         return 0, 0
 
     referenced = set()
-    duplicate_symbols = 0
     for symbol, chunk_ids in symbol_index.items():
         if symbol != symbol.lower():
             errors.add(f"符号索引 key 不是小写：{symbol}")
         if not isinstance(chunk_ids, list) or not chunk_ids:
             errors.add(f"符号索引 {symbol} 的 value 不是非空列表")
             continue
-        valid_ids = []
         for chunk_id in chunk_ids:
             if not isinstance(chunk_id, str):
                 errors.add(f"符号索引 {symbol} 含非字符串 chunk_id")
                 continue
-            valid_ids.append(chunk_id)
             if chunk_id not in chunks:
                 errors.add(f"符号索引 {symbol} 引用了不存在的 chunk_id：{chunk_id}")
             referenced.add(chunk_id)
-        if len(valid_ids) != len(set(valid_ids)):
-            duplicate_symbols += 1
-
-    if duplicate_symbols:
-        logger.warning(
-            f"符号索引中有 {duplicate_symbols} 个符号包含重复 chunk_id"
-            "（不影响完整性，下次重建会自动去重）"
-        )
 
     return len(symbol_index), len(referenced)
 

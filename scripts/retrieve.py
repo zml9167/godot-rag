@@ -87,7 +87,8 @@ def detect_symbols(query: str) -> list[str]:
 def symbol_lookup(symbols: list[str], top_k: int = 3) -> list[dict]:
     hits = []
     for sym in symbols:
-        chunk_ids = SYMBOL_INDEX.get(sym.lower(), [])
+        # 先按 chunk_id 去重，避免重复项占用 top_k 槽位
+        chunk_ids = list(dict.fromkeys(SYMBOL_INDEX.get(sym.lower(), [])))
         # API 参考块优先，教程块次之
         ranked = sorted(
             chunk_ids,
