@@ -1,16 +1,15 @@
-import re
 import json
 from loguru import logger
 from pathlib import Path
 
-from ..utils import PROJECT_DIR, SYMBOL_INDEX_DIR, STOPWORDS, DOCS_DIRS
+from ..utils import PROJECT_DIR, SYMBOL_INDEX_DIR, STOPWORDS, CHUNKS_PATH
 from ..pattern_utils import get_symbol_from_clases_content
 
 CURRENT_PATH = Path(__file__)
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.log"
 
 
-def extract_symbols_from_header_path(chunk: dict, index: int) -> set[str]:
+def extract_symbols_from_header_path(chunk: dict, index: int = 0) -> set[str]:
     """从 chunk 的 header_path 中提取符号"""
     symbols = set()
     if not isinstance(chunk.get("header_path"), list):
@@ -24,14 +23,14 @@ def extract_symbols(chunk: dict) -> set[str]:
     """从 chunk 的 source 和 content 中提取符号"""
     symbols = set()
     if chunk["chunk_type"] == "classes":
-        symbols.update(extract_symbols_from_header_path(chunk, 0))
-        symbols.update(get_symbol_from_clases_content(chunk))
+        symbols.update(extract_symbols_from_header_path(chunk["content"], 0))
+        symbols.update(get_symbol_from_clases_content(chunk["content"]))
     else:
-        symbols.update(extract_symbols_from_header_path(chunk, -1))
+        symbols.update(extract_symbols_from_header_path(chunk["content"], -1))
     return {s for s in symbols if s.lower() not in STOPWORDS and len(s) >= 3}
 
 
-def build(chunks_path: str):
+def build(chunks_path: Path = CHUNKS_PATH):
     logger.add(LOG_PATH)
     SYMBOL_INDEX_DIR.mkdir(parents=True, exist_ok=True)
 

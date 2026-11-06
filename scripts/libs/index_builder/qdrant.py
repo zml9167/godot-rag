@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient, models
 
 import numpy as np
 
-from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, get_model
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, MODELS_CACHE_DIR, CHUNKS_PATH, get_model
 
 NAMESPACE = uuid.NAMESPACE_DNS
 
@@ -42,7 +42,7 @@ def _to_point(chunk: dict, vector: list[float]) -> models.PointStruct:
     )
 
 
-def build(chunks_path: str):
+def build(chunks_path: Path = CHUNKS_PATH):
     qdrant_path = str(QURANT_DATA_DIR)
     MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     logger.add(LOG_PATH)
