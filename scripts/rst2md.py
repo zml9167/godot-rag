@@ -1,16 +1,19 @@
+import re
 from multiprocessing import Pool
 from loguru import logger
 from rst_to_myst import rst_to_myst
 from pathlib import Path
 
-from .libs.utils import PROJECT_DIR
+from .libs.utils import PROJECT_DIR, DOCS_DIRS
 
 DOCS_DIR_NAME = "godot-docs-master"
-
 DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
-LOG_PATH = PROJECT_DIR / "logs/convert.log"
+LOG_PATH = PROJECT_DIR / f"logs/{Path(__file__).stem}.log"
 
-DOCS_DIRS = ["about", "classes", "community", "engine_details", "getting_started", "tutorials"]
+
+def strip_grid_borders(text: str) -> str:
+    # 删除所有 +---+---+ 边框行（连同换行）
+    return re.sub(r'(?m)^\s*\+[-=+]+\+\s*$\n?', '', text)
 
 
 def run(f: Path):
@@ -23,7 +26,7 @@ def run(f: Path):
        logger.error(log_content)
        
     output_path = f.with_name(f.stem + '.md')
-    output_path.write_text(output.text, encoding='utf-8')
+    output_path.write_text(strip_grid_borders(output.text), encoding='utf-8')
 
 
 if __name__ == "__main__":

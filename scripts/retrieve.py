@@ -5,8 +5,8 @@ from pathlib import Path
 from qdrant_client import QdrantClient
 
 from .libs.tokenizer import tokenize
-from .libs.utils import PROJECT_DIR, QURANT_DATA_DIR, STOPWORDS, SYMBOL_INDEX_PATH, DOCS_DIRS, get_model
-from .libs.pattern_utils import ref_with_target_re, ref_target_bold_ident_re, void_mark_bold_ident_re, file_line_range_re
+from .libs.utils import PROJECT_DIR, QURANT_DATA_DIR, STOPWORDS, SYMBOL_INDEX_PATH, get_model
+from .libs.pattern_utils import match_sybol_from_classes_content
 
 # ============ 全局加载（进程启动时加载一次） ============
 PROJECT_DIR = Path(__file__).resolve().parents[1]
@@ -47,7 +47,7 @@ QDRANT = QdrantClient(path=QURANT_DATA_DIR)
 model = get_model()
 
 
-def get_symbol_order(sym: str, chunk) -> tuple[int, int]:
+def get_symbol_order(sym: str, chunk) -> tuple:
     """返回符号索引的优先级顺序，越小越优先"""
     order_chunk_type = len(SYMBOL_ORDER)
     if chunk["chunk_type"] in SYMBOL_ORDER:
@@ -60,17 +60,9 @@ def get_symbol_order(sym: str, chunk) -> tuple[int, int]:
             if sym.lower() in h.lower():
                 order_header_path = False
                 break
-    order_source = True
-    source_match = re.search(file_line_range_re(), chunk["source"])
-    for i in source_match.groups() if source_match else []:
-        for j in i.split('_'):
-            if sym.lower() == j.lower():
-                order_source = False
-                break
-    order_content = not re.search(ref_with_target_re(sym), chunk["content"]) \
-                    or not re.search(ref_target_bold_ident_re(sym), chunk["content"]) \
-                    or not re.search(void_mark_bold_ident_re(sym), chunk["content"])
-    return (order_chunk_type, order_header_path, order_source, order_content)
+    order_source = sym.lower() not in chunk['source'].lower()
+    order_content = match_sybol_from_classes_content(sym, chunk["content"])
+    return (order_header_path, order_source, order_content, order_chunk_type)
 
 
 def detect_symbols(query: str) -> list[str]:
