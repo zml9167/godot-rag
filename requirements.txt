@@ -7,6 +7,5 @@ rank-bm25
 qdrant-client
 transformers
 sentence-transformers
-safetensors
 openai
 ipspot
