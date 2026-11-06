@@ -70,7 +70,7 @@ def get_symbol_order(sym: str, chunk) -> tuple[int, int]:
     order_content = not re.search(ref_with_target_re(sym), chunk["content"]) \
                     or not re.search(ref_target_bold_ident_re(sym), chunk["content"]) \
                     or not re.search(void_mark_bold_ident_re(sym), chunk["content"])
-    return (order_chunk_type, order_header_path, order_source, order_content)
+    return (order_header_path, order_source, order_content, order_chunk_type)
 
 
 def detect_symbols(query: str) -> list[str]:
