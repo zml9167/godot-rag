@@ -2,7 +2,6 @@ import json
 import os
 import re
 import shutil
-import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -74,90 +73,6 @@ def load_model_from_modelscope(model_name):
         install_modelscope()
         from modelscope import snapshot_download
     model_dir = snapshot_download(model_name, cache_dir=MODELS_CACHE_DIR)
-    return model_dir
-
-
-def is_valid_safetensors(path):
-    """只解析 safetensors 头部，确认偏移量没有超出文件大小。"""
-    path = Path(path)
-    try:
-        with path.open("rb") as f:
-            raw_len = f.read(8)
-            if len(raw_len) != 8:
-                return False
-            (header_len,) = struct.unpack("<Q", raw_len)
-            # 正常模型的头部只有几 KB；限制上限避免读到损坏的巨大长度
-            if header_len <= 1 or header_len > 100 * 1024 * 1024:
-                return False
-            header = json.loads(f.read(header_len))
-
-        max_end = 0
-        tensor_count = 0
-        for key, meta in header.items():
-            if key == "__metadata__":
-                continue
-            start, end = meta["data_offsets"]
-            if start < 0 or end < start:
-                return False
-            max_end = max(max_end, end)
-            tensor_count += 1
-
-        data_start = 8 + header_len
-        return tensor_count > 0 and data_start + max_end <= path.stat().st_size
-    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
-        return False
-
-
-def ensure_safetensors(model_dir):
-    """torch < 2.6 时 transformers 拒绝加载 .bin，这里把旧权重转成 safetensors。"""
-    model_dir = Path(model_dir)
-    safe_path = model_dir / "model.safetensors"
-    bin_path = model_dir / "pytorch_model.bin"
-
-    if safe_path.exists():
-        if is_valid_safetensors(safe_path):
-            return model_dir
-        print(f"{safe_path} 已损坏或不完整，将重新生成", flush=True)
-        safe_path.unlink()
-
-    sharded_bins = sorted(model_dir.glob("pytorch_model-*-of-*.bin"))
-    if sharded_bins:
-        raise ValueError(
-            f"暂不支持分片 .bin 权重（{sharded_bins[0].name}），"
-            "请先从 Hugging Face 下载 safetensors 版本。"
-        )
-
-    if not bin_path.exists():
-        return model_dir
-
-    import torch
-    from safetensors.torch import save_file
-
-    tmp_path = model_dir / "model.safetensors.tmp"
-    print(f"正在把 {bin_path} 转换为 safetensors（首次运行较慢）...", flush=True)
-    try:
-        state_dict = torch.load(bin_path, map_location="cpu", weights_only=True)
-
-        # safetensors 不能保存共享同一块存储或非连续的 tensor
-        seen = set()
-        for key, tensor in state_dict.items():
-            if not tensor.is_contiguous():
-                tensor = tensor.contiguous()
-            ptr = tensor.untyped_storage().data_ptr()
-            if ptr in seen:
-                tensor = tensor.clone()
-            else:
-                seen.add(ptr)
-            state_dict[key] = tensor
-
-        save_file(state_dict, str(tmp_path), metadata={"format": "pt"})
-        os.replace(tmp_path, safe_path)
-    finally:
-        state_dict = None
-        if tmp_path.exists():
-            tmp_path.unlink()
-
-    print(f"已生成 {safe_path}", flush=True)
     return model_dir
 
 
@@ -368,7 +283,7 @@ def get_model(device: str | None = None):
         )
     else:
         model = SentenceTransformer(
-            str(ensure_safetensors(model_dir)), device=device
+            str(model_dir), device=device
         )
 
     # bge-m3 默认支持 8192 token；默认截断到 4096，兼顾覆盖率和显存。
