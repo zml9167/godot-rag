@@ -4,7 +4,7 @@ from pathlib import Path
 
 import portalocker
 
-from .libs.utils import PROJECT_DIR
+from libs.utils import PROJECT_DIR
 
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"
@@ -12,7 +12,7 @@ LOCK_PATH = PROJECT_DIR / "data/.pipeline.lock"
 PIPELINE_MODULES = (
     "scripts.rst2md",
     "scripts.chunk_documents",
-    "scripts.build_index",
+    "scripts.build_all_index",
 )
 
 

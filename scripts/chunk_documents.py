@@ -32,6 +32,7 @@ if __name__ == "__main__":
     config = ChunkConfig(max_chunk_size = 8192,strategy_override="structural")
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_PATH.write_text('')
+    chunk_count = 0
     for d in DOCS_DIRS:
         doc_dir = DOCS_SOURCE / d
         print(doc_dir)
@@ -65,3 +66,5 @@ if __name__ == "__main__":
                 chunk_id = source + ':' + str(c.start_line) + '-' + str(c.end_line)
                 line = {"chunk_id": chunk_id, "source": source, "header_path": header_path, "content": c.content, "start_line": c.start_line, "end_line": c.end_line, "metadata": c.metadata, "chunk_type": d}
                 write_chunk(line)
+                chunk_count += 1
+    logger.info(f"已写入 {chunk_count} 条chunk")
