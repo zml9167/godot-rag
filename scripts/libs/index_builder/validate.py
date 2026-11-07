@@ -129,9 +129,9 @@ def _validate_qdrant(chunks, errors: ValidationErrors) -> int:
                 if str(point.id) != chunk_id_to_point_id(chunk_id):
                     errors.add(f"Qdrant point id 与 chunk_id 不匹配：{chunk_id}")
 
-                for field in ("source", "header_path", "chunk_type", "content"):
-                    if payload.get(field) != chunk.get(field):
-                        errors.add(f"Qdrant payload 字段不一致：{chunk_id}.{field}")
+                # payload 合同：只存 chunk_id（正文等字段检索时经 CHUNK_MAP
+                # 从 chunks.jsonl 取，Qdrant 不做第二份存储），因此这里
+                # 不比对 source/header_path/chunk_type/content。
 
                 vector = point.vector
                 if isinstance(vector, dict):
@@ -212,7 +212,7 @@ def _validate_bm25(order, errors: ValidationErrors) -> int:
         errors.add(f"BM25 corpus_size {corpus_size} != chunks 数 {len(order)}")
     doc_freqs = getattr(bm25, "doc_freqs", None)
     if doc_freqs is None or len(doc_freqs) != len(order):
-        errors.add(f"BM25 doc_freqs 数量与 chunks 数不一致")
+        errors.add("BM25 doc_freqs 数量与 chunks 数不一致")
 
     with open(meta_path, encoding="utf-8") as f:
         meta = json.load(f)
