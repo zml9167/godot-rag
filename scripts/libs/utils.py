@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import shutil
@@ -25,24 +24,6 @@ STOPWORDS = {"what", "the", "a", "an", "is", "are", "to", "of", "and", "in", "on
              "when", "where", "which", "can", "do", "does", "did", "from", "by", "at",
              "not", "but", "all", "any", "some", "each", "every", "other", "more", "most",
              "should", "such", "no", "nor", "too", "very", "class"}
-
-
-def configure_rocm():
-    """ROCm 的 PyTorch wheel 可能不包含 gfx1031（RX 6750 GRE / 6700 XT）的 kernel。"""
-    if os.environ.get("HSA_OVERRIDE_GFX_VERSION") or not Path("/opt/rocm").exists():
-        return
-    try:
-        result = subprocess.run(
-            ["rocminfo"], capture_output=True, text=True, timeout=10, check=False
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return
-    if "gfx1031" in result.stdout:
-        os.environ["HSA_OVERRIDE_GFX_VERSION"] = "10.3.0"
-
-
-# 必须在 import torch / 初始化 HIP 之前设置
-configure_rocm()
 
 
 def get_current_ip_country() -> str:
@@ -270,7 +251,12 @@ def get_device() -> str:
     )
 
 
-def get_model(device: str | None = None):
+def get_model(device: str | None = None, max_seq_length: int | None = None):
+    """加载 bge-m3。
+
+    截断上限唯一在此处确定：显式参数 max_seq_length 优先，
+    其次是环境变量 GODOT_RAG_MAX_SEQ_LENGTH，都不传则用默认 4096。
+    """
     from sentence_transformers import SentenceTransformer
 
     device = device or get_device()
@@ -286,9 +272,9 @@ def get_model(device: str | None = None):
             str(model_dir), device=device
         )
 
-    # bge-m3 默认支持 8192 token；默认截断到 4096，兼顾覆盖率和显存。
-    # 可通过 GODOT_RAG_MAX_SEQ_LENGTH 调整。
-    max_seq_length = int(os.environ.get("GODOT_RAG_MAX_SEQ_LENGTH", "4096"))
+    if max_seq_length is None:
+        max_seq_length = int(os.environ.get("GODOT_RAG_MAX_SEQ_LENGTH", "4096"))
     if max_seq_length > 0:
+        # 只能收紧，不能超过模型自身的 token 上限
         model.max_seq_length = min(model.max_seq_length, max_seq_length)
     return model
