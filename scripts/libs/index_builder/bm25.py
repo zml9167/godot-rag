@@ -13,7 +13,7 @@ LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.parent.name}_{CURRENT_PATH.stem}.l
 
 
 def build(chunks_path):
-    logger.add(LOG_PATH)
+    logger.add(LOG_PATH, encoding="utf-8")
     BM25_INDEX_DIR.mkdir(parents=True, exist_ok=True)
 
     chunk_ids, tokenized_corpus = [], []

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import portalocker
 
-from libs.utils import PROJECT_DIR
+from .libs.utils import PROJECT_DIR
 
 DOCS_REPOSITORY = "https://github.com/godotengine/godot-docs.git"
 DOCS_DIR = PROJECT_DIR / "godot-docs-master"

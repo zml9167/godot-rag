@@ -28,7 +28,7 @@ def norm(text: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    logger.add(LOG_PATH)
+    logger.add(LOG_PATH, encoding="utf-8")
     config = ChunkConfig(max_chunk_size = 8192,strategy_override="structural")
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_PATH.write_text('')
