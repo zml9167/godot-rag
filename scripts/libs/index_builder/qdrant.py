@@ -1,8 +1,10 @@
 import json
 import multiprocessing
 import os
+import shutil
 import uuid
 from collections import deque
+from queue import Empty
 
 # 必须在 torch 首次初始化 CUDA 分配器之前设置（utils 里 torch 是函数内导入，
 # 此处一定是它之前）。展开式 segment 让分配器按小块映射/卸载显存，
@@ -17,7 +19,7 @@ from qdrant_client import QdrantClient, models
 
 import numpy as np
 
-from ..utils import PROJECT_DIR, QURANT_DATA_DIR, CHUNKS_PATH, get_model
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, CHUNKS_PATH, get_model, format_duration
 
 NAMESPACE = uuid.NAMESPACE_DNS
 
@@ -332,11 +334,12 @@ def _write_qdrant_worker(points_q: multiprocessing.Queue, result_q: multiprocess
     """
     try:
         logger.add(LOG_PATH, encoding="utf-8")
+        # 物理清空整个存储目录再重建：qdrant-client 1.20.0 本地模式下
+        # delete_collection + create_collection 实测不清空旧 point（已隔离复现，
+        # 旧点残留会让校验失败、检索时 CHUNK_MAP KeyError），不再信任它
+        if QURANT_DATA_DIR.exists():
+            shutil.rmtree(QURANT_DATA_DIR)
         client = QdrantClient(path=str(QURANT_DATA_DIR))
-
-        # collection 不存在就重建（方便重建）
-        if client.collection_exists(COLLECTION_NAME):
-            client.delete_collection(COLLECTION_NAME)
         client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=models.VectorParams(
@@ -344,6 +347,9 @@ def _write_qdrant_worker(points_q: multiprocessing.Queue, result_q: multiprocess
                 distance=models.Distance.COSINE,
             ),
         )
+        if client.count(COLLECTION_NAME, exact=True).count != 0:
+            client.close()
+            raise RuntimeError("新 collection 非空，存储目录清理失败")
 
         written = 0
         buffer: list[models.PointStruct] = []
@@ -366,7 +372,12 @@ def _write_qdrant_worker(points_q: multiprocessing.Queue, result_q: multiprocess
             written += len(buffer)
             logger.info(f"已写入 qdrant {written}")
 
+        # 收尾校验：collection 里的 point 数必须恰好等于本次写入数，
+        # 多了是残留、少了是丢点，都说明存储状态不可信
+        total = client.count(COLLECTION_NAME, exact=True).count
         client.close()
+        if total != written:
+            raise RuntimeError(f"写入后 point 数 {total} != 本次写入 {written}，存储状态异常")
         result_q.put(written)
         logger.info(f"写入进程结束，总共写入 {written} 个 chunk")
     except BaseException as exc:
@@ -376,6 +387,9 @@ def _write_qdrant_worker(points_q: multiprocessing.Queue, result_q: multiprocess
 
 
 def build(chunks_path: Path = CHUNKS_PATH):
+    import time
+
+    started = time.perf_counter()
     logger.add(LOG_PATH, encoding="utf-8")
     logger.info("读取 chunks")
     chunks = []
@@ -421,7 +435,6 @@ def build(chunks_path: Path = CHUNKS_PATH):
     writer.start()
 
     encoded = 0
-    import time
     import torch
 
     # 待编码的 chunk 与 token 数一一对应，批是边取边组的：
@@ -430,6 +443,15 @@ def build(chunks_path: Path = CHUNKS_PATH):
     batch_no = 0
     try:
         while pending:
+            # 写入进程已死就尽早中止：继续编码只会把数据喂给无人消费的队列，
+            # 内存白涨、GPU 白烧，错误却要到全部编码完才浮出
+            if not writer.is_alive():
+                # 缓冲数据已永远无法送达，放弃 feeder 线程的退出冲洗：
+                # 否则解释器退出时 join 一个写不出去的队列会永久挂起（实测复现）
+                points_q.cancel_join_thread()
+                raise RuntimeError(
+                    f"qdrant 写入进程提前退出（exitcode={writer.exitcode}），中止编码，详见日志"
+                )
             batch_started = time.perf_counter()
             batch_items = _take_batch(pending, token_budget, attn_budget)
             batch_no += 1
@@ -459,15 +481,34 @@ def build(chunks_path: Path = CHUNKS_PATH):
             if EMPTY_CACHE_EVERY > 0 and batch_no % EMPTY_CACHE_EVERY == 0:
                 torch.cuda.empty_cache()
     finally:
-        # 无论编码是否出错都要发哨兵并等待写入进程收尾
-        points_q.put(None)
+        # 无论编码是否出错都要发哨兵并等待写入进程收尾。
+        # （实测：写入进程死后 put 本身几乎不会抛错——数据只是被 feeder
+        #   线程静默丢弃；这里兜底以防万一，避免次生异常掩盖编码阶段的原始错误）
+        try:
+            points_q.put(None)
+        except (ValueError, OSError):
+            logger.warning("points_q put 失败（罕见），跳过哨兵发送")
         writer.join()
+        if writer.exitcode not in (None, 0):
+            # writer 异常收场时同样放弃冲洗（死掉的消费者读不到任何数据）
+            points_q.cancel_join_thread()
 
     if writer.exitcode != 0:
         raise RuntimeError(f"qdrant 写入进程异常退出（exitcode={writer.exitcode}），详见日志")
 
-    written = result_q.get()
+    # exitcode==0 已保证 worker 是在 result_q.put(written) 成功后才退出的，
+    # 正常情况下 get() 立即返回；超时兜底只是把"理论上不可能的挂死"
+    # 变成明确报错，而非永久阻塞
+    try:
+        written = result_q.get(timeout=120)
+    except Empty as exc:
+        raise RuntimeError(
+            "写入进程退出后 120s 内未回传写入计数，result_q 状态异常"
+        ) from exc
     logger.info(f"总共写入 {written} 个 chunk 到 Qdrant（共生成 {encoded} 个向量）")
+    elapsed = time.perf_counter() - started
+    logger.info(f"qdrant 索引构建完成，总耗时 {format_duration(elapsed)}")
+    return elapsed
 
 
 def validate_calibration(chunks_path: Path = CHUNKS_PATH):
@@ -522,6 +563,9 @@ def validate_calibration(chunks_path: Path = CHUNKS_PATH):
         raise RuntimeError("阶段一纯逻辑验证失败，请检查")
 
     # ---- 阶段二：真实 GPU 标定 ----
+    import time
+    import torch
+
     model = get_model()
     token_lens = _count_token_lens(chunks, model)
     chunk_items = list(zip(chunks, token_lens))
@@ -530,12 +574,18 @@ def validate_calibration(chunks_path: Path = CHUNKS_PATH):
     attn_budget, token_budget = calibrate_budgets(
         model, chunk_items, fixed_attn=fixed_attn, fixed_tok=fixed_tok
     )
+
+    # CPU 模式没有显存可探针：calibrate_budgets 返回的是 floor 兜底值，
+    # 后面的 torch.cuda.* 统计调用在无 CUDA 环境会抛底层异常，提前收工
+    if str(model.device) == "cpu" or not torch.cuda.is_available():
+        logger.info(
+            f"标定结果（CPU 模式，跳过显存探针）：attn={attn_budget}，token 上限={token_budget}/批"
+        )
+        return
+
     logger.info(f"标定结果：attn={attn_budget}，token 上限={token_budget}/批")
 
     # 用标定结果真实编码一批运行批，确认可跑
-    import time
-    import torch
-
     first = _take_batch(deque(chunk_items), token_budget, attn_budget)
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
