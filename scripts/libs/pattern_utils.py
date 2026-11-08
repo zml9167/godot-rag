@@ -6,11 +6,12 @@ def pattern_of_signals(pattern: str = r'([A-Za-z_]+)') -> str:
 
 
 def pattern_of_enumerations(pattern: str = r'([A-Za-z_]+)') -> str:
-    return r':ref:`' + pattern + r'<[A-Za-z_]+>`'
+    # 类名槽 [A-Za-z0-9_]+：Godot 类名普遍含数字（Node2D/Vector3/CharacterBody2D）
+    return r':ref:`' + pattern + r'<[A-Za-z0-9_]+>`'
 
 
 def pattern_of_property(pattern: str = r'([a-z_]+)') -> str:
-    return r'\{ref\}`[A-Za-z]+<[A-Za-z_]+>`\s+\*\*' + pattern + r'\*\*'
+    return r'\{ref\}`[A-Za-z0-9_]+<[A-Za-z0-9_]+>`\s+\*\*' + pattern + r'\*\*'
 
 
 def pattern_of_constant(pattern: str = r'([A-Z_]+)') -> str:
@@ -18,7 +19,7 @@ def pattern_of_constant(pattern: str = r'([A-Z_]+)') -> str:
 
 
 def pattern_of_method(pattern: str = r'([A-Za-z_]+)') -> str:
-    return r'\{ref\}`[A-Za-z]+<[A-Za-z_]+>`\s+\*\*[\\]*'+ pattern + r'\*\*\(\)'
+    return r'\{ref\}`[A-Za-z0-9_]+<[A-Za-z0-9_]+>`\s+\*\*[\\]*'+ pattern + r'\*\*\(\)'
 
 
 def get_symbol_from_clases_content(content: str):
@@ -39,6 +40,8 @@ def get_symbol_from_clases_content(content: str):
 
 def match_sybol_from_classes_content(sym: str, content: str):
     """从 chunk 的 content 中匹配符号"""
+    # sym 来自用户查询，先转义再拼接，防止元字符被正则引擎当成规则（正则注入）
+    sym = re.escape(sym)
     symbols = set()
     for m in re.findall(pattern_of_enumerations(sym), content):
         symbols.add(m)
