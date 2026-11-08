@@ -1,3 +1,5 @@
+import os
+
 from openai import OpenAI
 
 SYSTEM_PROMPT = """你是一个 Godot 引擎文档助手。请严格根据下面提供的文档片段回答问题。
@@ -39,17 +41,35 @@ def build_prompt(query: str, chunks: list[dict]) -> list[dict]:
         {"role": "user", "content": user_message},
     ]
 
-client = OpenAI(
-    api_key="your_api_key_here",  # 替换为你的 API Key
-    base_url="https://api.deepseek.com",  # 或其他兼容接口
-)
+def _get_client() -> OpenAI:
+    """惰性构造客户端：import 本模块不需要 key，走到生成这一步才构造。
+
+    统一使用 OpenAI 兼容的通用变量名（DeepSeek 本身就是 OpenAI 兼容端点）：
+    - OPENAI_BASE_URL（必填）：服务地址，
+      云端 DeepSeek 如 https://api.deepseek.com，
+      本地部署如 http://localhost:11434/v1（Ollama）；
+    - OPENAI_API_KEY（可选）：服务密钥；缺失时用占位值 "EMPTY" 放行
+      （本地部署不校验 key；云端服务会对占位 key 返回 401，报错原样透出）；
+    - OPENAI_MODEL（可选）：模型名，默认 deepseek-chat。
+    """
+    base_url = os.environ.get("OPENAI_BASE_URL")
+    if not base_url:
+        raise RuntimeError(
+            "未配置服务地址：请先设置环境变量 OPENAI_BASE_URL，"
+            "例如云端 DeepSeek：'https://api.deepseek.com'，"
+            "本地 Ollama：'http://localhost:11434/v1'"
+        )
+    return OpenAI(
+        api_key=os.environ.get("OPENAI_API_KEY") or "EMPTY",
+        base_url=base_url,
+    )
 
 
 def generate_answer(query: str, chunks: list[dict]) -> str:
-    messages = build_prompt(query, chunks)
+    client = _get_client()
     response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=messages,
+        model=os.environ.get("OPENAI_MODEL", "deepseek-chat"),
+        messages=build_prompt(query, chunks),
         temperature=0.1,   # 低温度，减少自由发挥
         max_tokens=1500,
     )
