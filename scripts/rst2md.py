@@ -12,10 +12,10 @@ LOG_PATH = PROJECT_DIR / f"logs/{Path(__file__).stem}.log"
 
 
 def strip_grid_borders(text: str) -> str:
+    # 删除 RST transition 转换残留的下划线分隔行（\n_______\n，连同换行）
+    result = re.sub(r'(?m)^[ \t]*_{10,}[ \t]*$\n?', '', text)
     # 删除所有 +---+---+ 边框行（连同换行）
-    result = re.sub(r'\\n_{10,}\\n', '', text)
-    # 删除 \n_______\n
-    result = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$\n?', '', text)
+    result = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$\n?', '', result)
     return result
 
 
