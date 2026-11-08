@@ -26,6 +26,17 @@ STOPWORDS = {"what", "the", "a", "an", "is", "are", "to", "of", "and", "in", "on
              "should", "such", "no", "nor", "too", "very", "class"}
 
 
+def format_duration(seconds: float) -> str:
+    """把秒数格式化为人类可读的时长，如 3.5 秒 / 37 分 12 秒 / 2 小时 05 分 03 秒"""
+    if seconds < 60:
+        return f"{seconds:.1f} 秒"
+    m, s = divmod(int(round(seconds)), 60)
+    if m < 60:
+        return f"{m} 分 {s:02d} 秒"
+    h, m = divmod(m, 60)
+    return f"{h} 小时 {m:02d} 分 {s:02d} 秒"
+
+
 def get_current_ip_country() -> str:
     from ipspot import get_public_ipv4, IPv4API
     """使用 ipspot 一步到位，获取IP并查询其国家代码"""
@@ -58,31 +69,31 @@ def load_model_from_modelscope(model_name):
 
 
 def resolve_model_dir():
+    """在缓存目录里找已下载的模型；找到任何候选就返回，找不到返回 None。
+
+    候选覆盖两种下载器的落盘布局：
+    - models/BAAI--bge-m3：ModelScope（CN 机器实际使用的）
+    - models--BAAI--bge-m3：HuggingFace / SentenceTransformer（非 CN 机器）
+    两种布局的模型本体都在各自的 snapshots/<版本>/ 下；
+    目录是否完整不在这里判断，交给 get_model 里的 SentenceTransformer
+    实际加载来裁决（加载失败会走重新下载兜底）。
+    """
     if not MODELS_CACHE_DIR.exists():
-        MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        if get_current_ip_country() == 'CN':
-            return load_model_from_modelscope(EMBEDDING_MODEL)
         return None
 
     for candidate in (
-        MODELS_CACHE_DIR / "models/BAAI--bge-m3",
-        MODELS_CACHE_DIR / "BAAI--bge-m3",
+        MODELS_CACHE_DIR / "models/BAAI--bge-m3",      # ModelScope 布局
+        MODELS_CACHE_DIR / "models--BAAI--bge-m3",     # HuggingFace / SentenceTransformer 布局
+        MODELS_CACHE_DIR / "BAAI--bge-m3",             # 手工放置/其它
     ):
-        if not candidate.exists():
+        if not candidate.is_dir():
             continue
-        if (candidate / "config.json").exists():
-            return candidate
-        # ModelScope 的目录结构：<model>/snapshots/<revision>/
-        snapshots = [
-            p for p in (candidate / "snapshots").glob("*") if (p / "config.json").exists()
-        ]
-        if snapshots:
-            return max(snapshots, key=lambda p: p.stat().st_mtime)
-        return candidate
-
-    if get_current_ip_country() == 'CN':
-        return load_model_from_modelscope(EMBEDDING_MODEL)
-
+        snapshots_dir = candidate / "snapshots"
+        if snapshots_dir.is_dir():
+            versions = [p for p in snapshots_dir.iterdir() if p.is_dir()]
+            if versions:
+                return max(versions, key=lambda p: p.stat().st_mtime)
+        return candidate    # 无 snapshots 层（扁平布局）：原样返回，交给加载器裁决
     return None
 
 
@@ -262,15 +273,34 @@ def get_model(device: str | None = None, max_seq_length: int | None = None):
     device = device or get_device()
     print(f"Encoding device: {describe_device(device)}", flush=True)
 
-    model_dir = resolve_model_dir()
-    if model_dir is None:
-        model = SentenceTransformer(
-            EMBEDDING_MODEL, device=device, cache_folder=str(MODELS_CACHE_DIR)
-        )
-    else:
-        model = SentenceTransformer(
-            str(model_dir), device=device
-        )
+    model = None
+    candidate = resolve_model_dir()
+    if candidate is not None:
+        try:
+            model = SentenceTransformer(str(candidate), device=device)
+        except Exception as exc:
+            # 缓存目录可能残缺（下载中断等）：加载失败就重新下载一次。
+            # 这里不自动删除缓存目录：加载失败也可能只是暂时性的
+            # （文件被占用），误删好缓存代价更大；反复失败再手动删
+            print(
+                f"WARNING: 缓存模型加载失败（{type(exc).__name__}: {exc}），"
+                f"将重新下载模型；若反复失败可手动删除 {candidate}",
+                flush=True,
+            )
+
+    if model is None:
+        MODELS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        model_dir = None
+        if get_current_ip_country() == "CN":
+            model_dir = load_model_from_modelscope(EMBEDDING_MODEL)
+        if model_dir is None:
+            model = SentenceTransformer(
+                EMBEDDING_MODEL, device=device, cache_folder=str(MODELS_CACHE_DIR)
+            )
+        else:
+            model = SentenceTransformer(
+                str(model_dir), device=device
+            )
 
     if max_seq_length is None:
         max_seq_length = int(os.environ.get("GODOT_RAG_MAX_SEQ_LENGTH", "4096"))
