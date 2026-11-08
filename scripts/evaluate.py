@@ -10,6 +10,10 @@ QUESTIONS_PATH = PROJECT_DIR / "evaluate/questions.jsonl"
 MISSES_PATH = PROJECT_DIR / "evaluate/misses.json"
 TOP_K = 6
 
+# 这些键缺失会让后续 eval_retrieval / eval_generation 直接 KeyError，
+# 在校验阶段统一拦截并给出行号
+REQUIRED_KEYS = ("id", "query", "type", "expected_source")
+
 
 # ---------- 1. 校验 expected_source ----------
 def validate_questions():
@@ -24,8 +28,21 @@ def validate_questions():
 
     problems = []
     with open(QUESTIONS_PATH, encoding="utf-8") as f:
-        for line in f:
-            q = json.loads(line)
+        for lineno, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
+                q = json.loads(line)
+            except json.JSONDecodeError as exc:
+                problems.append((f"第{lineno}行", "JSON 解析失败", str(exc)))
+                continue
+            if not isinstance(q, dict):
+                problems.append((f"第{lineno}行", "不是 JSON 对象", type(q).__name__))
+                continue
+            missing = [key for key in REQUIRED_KEYS if key not in q]
+            if missing:
+                problems.append((f"第{lineno}行", "缺少字段", "、".join(missing)))
+                continue
             if q["expected_source"] is None:
                 continue
             if q["expected_source"] not in sources:
@@ -46,7 +63,7 @@ def validate_questions():
             print(f"  {pid}: {reason} -> {value}")
         print("请先修正 questions.jsonl 再继续。\n")
     else:
-        print("✅ 所有 expected_source / expected_section 校验通过\n")
+        print("✅ 所有字段与 expected_source / expected_section 校验通过\n")
     return problems
 
 
