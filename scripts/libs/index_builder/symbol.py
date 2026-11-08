@@ -1,8 +1,9 @@
 import json
+import time
 from loguru import logger
 from pathlib import Path
 
-from ..utils import PROJECT_DIR, SYMBOL_INDEX_DIR, STOPWORDS, CHUNKS_PATH
+from ..utils import PROJECT_DIR, SYMBOL_INDEX_DIR, STOPWORDS, CHUNKS_PATH, format_duration
 from ..pattern_utils import get_symbol_from_clases_content
 
 CURRENT_PATH = Path(__file__)
@@ -33,6 +34,7 @@ def extract_symbols(chunk: dict) -> set[str]:
 def build(chunks_path: Path = CHUNKS_PATH):
     logger.add(LOG_PATH, encoding="utf-8")
     SYMBOL_INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    started = time.perf_counter()
 
     symbol_to_chunks = {}
     with open(chunks_path, encoding="utf-8") as f:
@@ -46,7 +48,11 @@ def build(chunks_path: Path = CHUNKS_PATH):
 
     with open(SYMBOL_INDEX_DIR / "symbol_index.json", "w", encoding="utf-8") as f:
         json.dump(symbol_to_chunks, f, ensure_ascii=False)
-    logger.info(f"symbol index done: {len(symbol_to_chunks)} symbols")
+    elapsed = time.perf_counter() - started
+    logger.info(
+        f"symbol index done: {len(symbol_to_chunks)} symbols，总耗时 {format_duration(elapsed)}"
+    )
+    return elapsed
 
 
 if __name__ == "__main__":
