@@ -1,5 +1,9 @@
 # 构建索引阶段的 GPU 显存调优记录
 
+> **历史文档**：向量编码与重排序均已改为调用 SiliconFlow API（见 `scripts/libs/siliconflow.py`），
+> `scripts/libs/index_builder/qdrant.py` 中的本地 GPU 编码与显存预算机制已随之移除，
+> 下文提到的环境变量（`GODOT_RAG_VRAM_BUDGET` 等）已不存在。本文仅作为调优过程的历史记录保留。
+
 > 记录一次针对 `scripts/libs/index_builder/qdrant.py` 向量构建流程的完整调优过程：
 > 从"越跑越慢、显存增长直至 OOM"到"显存平稳、速度平稳、30 分钟全量构建 0 OOM"。
 

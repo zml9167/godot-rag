@@ -21,7 +21,8 @@
 │   ├── ask.py                 # 检索 + 生成的一体化入口
 │   ├── evaluate.py            # 检索与生成评估
 │   └── libs/
-│       ├── utils.py           # 设备检测、模型加载、路径常量
+│       ├── utils.py           # 路径常量与 API 客户端单例
+│       ├── siliconflow.py     # SiliconFlow embeddings/rerank API 客户端
 │       ├── tokenizer.py       # BM25 分词
 │       ├── pattern_utils.py   # API 符号提取正则
 │       └── index_builder/
@@ -34,11 +35,10 @@
 │   ├── bm25_index/
 │   ├── symbol_index/
 │   └── qdrant_data/
-├── models_cache/              # 嵌入模型缓存
 └── logs/                      # 各阶段日志
 ```
 
-`godot-docs-master/`、`data/`、`models_cache/` 和 `logs/` 属于本地输入或生成数据，不纳入版本控制。
+`godot-docs-master/`、`data/` 和 `logs/` 属于本地输入或生成数据，不纳入版本控制。
 
 ## 环境准备
 
@@ -48,9 +48,15 @@
 pip install -r requirements.txt
 ```
 
-`requirements.txt` 不包含 PyTorch，请根据本机 CUDA 环境另行安装。建索引时默认只使用 GPU（`cuda`），并在加载模型后、生成向量前打印当前设备；GPU 不可用时直接报错，不会静默回退到 CPU。启动时会先在子进程中运行一次 GPU 自检；如果 ROCm 版 PyTorch 没有为当前 GPU 架构（例如 `gfx1031`）编译内核，会自动设置兼容的 `HSA_OVERRIDE_GFX_VERSION`。如果确实需要 CPU，必须显式设置 `GODOT_RAG_ALLOW_CPU=1`。长序列截断长度可通过 `GODOT_RAG_MAX_SEQ_LENGTH` 调整（默认 4096）。编码批大小由构建启动时的自动标定决定：两个预算闸门——注意力预算 `GODOT_RAG_ATTN_BUDGET` 与单批 token 预算 `GODOT_RAG_TOKEN_BUDGET`——默认 `auto`，启动时从保守值逐档翻倍真实编码试水、按显存峰值二分逼近安全线；显存保留比例 `GODOT_RAG_VRAM_MARGIN`（默认 0.20）、缓存释放间隔 `GODOT_RAG_EMPTY_CACHE_EVERY`（默认 256 批）、二分精标轮数 `GODOT_RAG_REFINE_ROUNDS`（默认 7）、写入端攒批条数 `GODOT_RAG_UPSERT_BATCH`（默认 512）均可覆盖。
+`requirements.txt` 不包含 PyTorch：嵌入与重排序均已改为调用 SiliconFlow API，本项目不再依赖 GPU、PyTorch 或本地模型权重。
 
-嵌入模型为 `BAAI/bge-m3`，首次使用时会按当前 IP 所属国家选择下载源：中国大陆（`CN`）通过 ModelScope 下载，其他地区通过 Hugging Face 下载，缓存目录为 `models_cache/`。
+**嵌入与重排序依赖 SiliconFlow API，需要先导出密钥：**
+
+```bash
+export SILICONFLOW_API_KEY="你的密钥"
+```
+
+密钥缺失时，建索引或检索会在初始化客户端时报错。相关环境变量（均可省略，括号内为默认值）：嵌入模型名 `GODOT_RAG_EMBEDDING_MODEL`（`BAAI/bge-m3`）、重排序模型名 `GODOT_RAG_RERANKER_MODEL`（`BAAI/bge-reranker-v2-m3`）、服务地址 `SILICONFLOW_API_BASE`（`https://api.siliconflow.cn/v1`）、嵌入单请求条数 `GODOT_RAG_API_BATCH_SIZE`（`32`，API 硬上限）、单请求 token 预算 `GODOT_RAG_API_BATCH_TOKENS`（`24576`）、单条文本 token 上限 `GODOT_RAG_EMBEDDING_MAX_TOKENS`（`8176`，bge-m3 单条上限 8192 token；超限 chunk 会用 bge-m3 同款 tokenizer 按 token 精确截断后编码并在日志告警，tokenizer.json 首次使用时自动从 ModelScope/HF 下载到 `models_cache/tokenizers/`（约 9MB，本机已有 bge-m3 模型缓存时直接复用，不重复下载）、重排单请求文档数 `GODOT_RAG_RERANK_BATCH_SIZE`（`64`）、超时 `GODOT_RAG_API_TIMEOUT`（`60` 秒）、最大重试次数 `GODOT_RAG_API_MAX_RETRIES`（`8`）、重试初始等待 `GODOT_RAG_API_RETRY_BASE_DELAY`（`2.0` 秒）、重试等待上限 `GODOT_RAG_API_RETRY_MAX_DELAY`（`60.0` 秒）、写入端攒批条数 `GODOT_RAG_UPSERT_BATCH`（`512`）。429（限流）/503（过载）/504（超时）按指数退避自动重试；400/401/403/404 属于配置类错误，会直接报错中止。
 
 > 所有命令都需要在仓库根目录执行，并使用 `python -m scripts.<module>` 形式。脚本使用包内相对导入，直接 `python scripts/xxx.py` 会因相对导入失败。
 
@@ -91,11 +97,11 @@ python -m scripts.run_pipeline
 
 `scripts.build_all_index` 以三个子进程并行构建 `scripts/index_builder/` 下的三个模块（三者互不依赖，全部成功才进入校验）：
 
-- **Qdrant**：使用 `bge-m3` 生成 1024 维归一化向量，余弦距离，写入本地 `data/qdrant_data`，collection 名为 `godot_docs`。chunk ID 会经 UUIDv5 哈希后作为 point ID。重建时会物理清空整个 `data/qdrant_data` 存储目录后重新创建（qdrant-client 本地模式的 `delete_collection` 在部分版本下不会真正清空旧 point），写完会对 collection 内 point 总数与本次写入数做对账校验；请确认其中没有需要保留的数据。
+- **Qdrant**：通过 SiliconFlow API 使用 `bge-m3` 生成 1024 维归一化向量，余弦距离，写入本地 `data/qdrant_data`，collection 名为 `godot_docs`。chunk ID 会经 UUIDv5 哈希后作为 point ID。重建时会物理清空整个 `data/qdrant_data` 存储目录后重新创建（qdrant-client 本地模式的 `delete_collection` 在部分版本下不会真正清空旧 point），写完会对 collection 内 point 总数与本次写入数做对账校验；请确认其中没有需要保留的数据。
 - **BM25**：使用 `rank_bm25` 的 `BM25Okapi`，分词逻辑见 `scripts/tokenizer.py`，仅保留英文标识符和数字并转小写，与检索阶段保持一致。产物为 `data/bm25_index/` 下的 `bm25.pkl`、`chunk_ids.json` 和 `meta.json`。
 - **符号索引**：从章节标题最后一级、反引号包裹的标识符和 CamelCase 名称中提取 API 符号，建立“符号 -> chunk 列表”的小写映射，产物为 `data/symbol_index/symbol_index.json`。
 
-各阶段日志分别写入 `logs/`。调试批量标定可单独运行 `python -m scripts.libs.index_builder.qdrant --validate-calibration`：阶段一校验分批算法的不变量（无需 GPU、秒级完成），阶段二真机标定并试编码一批报告显存峰值；无 CUDA 环境会自动跳过显存探针。
+各阶段日志分别写入 `logs/`。
 
 ## 检索与问答
 

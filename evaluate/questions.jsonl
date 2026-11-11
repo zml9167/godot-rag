@@ -24,8 +24,8 @@
 {"id": "sem_en_004", "lang": "en", "query": "How do collision layers and masks work?", "type": "semantic", "expected_source": "tutorials/physics/physics_introduction.md", "expected_keywords": ["collision_layer", "collision_mask"]}
 {"id": "sem_zh_005", "lang": "zh", "query": "怎么做 UI 界面和按钮？", "type": "semantic", "expected_source": "tutorials/ui/index.md", "expected_keywords": ["Control", "Button"]}
 {"id": "sem_en_005", "lang": "en", "query": "How do I build a UI with buttons?", "type": "semantic", "expected_source": "tutorials/ui/index.md", "expected_keywords": ["Control", "Button"]}
-{"id": "sem_zh_006", "lang": "zh", "query": "信号和回调有什么区别，怎么选？", "type": "semantic", "expected_source": "classes/class_variant.md", "expected_keywords": ["signal", "connect"]}
-{"id": "sem_en_006", "lang": "en", "query": "What is the difference between signals and callbacks, and when should I use each?", "type": "semantic", "expected_source": "classes/class_variant.md", "expected_keywords": ["signal", "connect"]}
+{"id": "sem_zh_006", "lang": "zh", "query": "信号和回调有什么区别，怎么选？", "type": "semantic", "expected_source": "tutorials/scripting/gdscript/gdscript_basics.md", "expected_keywords": ["signal", "connect"]}
+{"id": "sem_en_006", "lang": "en", "query": "What is the difference between signals and callbacks, and when should I use each?", "type": "semantic", "expected_source": "tutorials/scripting/gdscript/gdscript_basics.md", "expected_keywords": ["signal", "connect"]}
 {"id": "sem_zh_007", "lang": "zh", "query": "Autoload 单例怎么用？", "type": "semantic", "expected_source": "tutorials/scripting/singletons_autoload.md", "expected_keywords": ["autoload", "singleton"]}
 {"id": "sem_en_007", "lang": "en", "query": "How do I use Autoload singletons?", "type": "semantic", "expected_source": "tutorials/scripting/singletons_autoload.md", "expected_keywords": ["autoload", "singleton"]}
 {"id": "sem_zh_008", "lang": "zh", "query": "怎么做暂停菜单？", "type": "semantic", "expected_source": "tutorials/scripting/pausing_games.md", "expected_keywords": ["pause", "process_mode"]}

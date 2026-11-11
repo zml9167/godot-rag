@@ -8,7 +8,8 @@ from .libs.utils import PROJECT_DIR, CHUNKS_PATH
 
 QUESTIONS_PATH = PROJECT_DIR / "evaluate/questions.jsonl"
 MISSES_PATH = PROJECT_DIR / "evaluate/misses.json"
-TOP_K = 6
+SYMBOL_TOP_K = 3
+FUSE_TOP_K = 6
 
 # 这些键缺失会让后续 eval_retrieval / eval_generation 直接 KeyError，
 # 在校验阶段统一拦截并给出行号
@@ -68,7 +69,7 @@ def validate_questions():
 
 
 # ---------- 2. 检索评估（按语言分组） ----------
-def eval_retrieval(questions, top_k=TOP_K):
+def eval_retrieval(questions, symbol_top_k=SYMBOL_TOP_K, fuse_top_k=FUSE_TOP_K):
     stats = defaultdict(lambda: {"total": 0, "hit": 0, "symbol_total": 0, "symbol_hit": 0})
     misses = []
 
@@ -79,7 +80,7 @@ def eval_retrieval(questions, top_k=TOP_K):
         s = stats[lang]
         s["total"] += 1
 
-        chunks = retrieve(q["query"], top_k=top_k)
+        chunks = retrieve(q["query"], symbol_top_k, fuse_top_k)
         sources = {c["source"] for c in chunks}
 
         hit = q["expected_source"] in sources if q["expected_source"] else False
@@ -99,10 +100,11 @@ def eval_retrieval(questions, top_k=TOP_K):
                 s["symbol_hit"] += 1
 
     print("=== 检索评估 ===")
+    top_k_count = symbol_top_k + fuse_top_k
     for lang in sorted(stats):
         s = stats[lang]
         hit_rate = s["hit"] / s["total"] if s["total"] else 0
-        print(f"[{lang}] Hit@{top_k}: {hit_rate:.1%} ({s['hit']}/{s['total']})")
+        print(f"[{lang}] Hit@{top_k_count}: {hit_rate:.1%} ({s['hit']}/{s['total']})")
         if s["symbol_total"]:
             sym_rate = s["symbol_hit"] / s["symbol_total"]
             print(f"[{lang}] Symbol Hit@1: {sym_rate:.1%} "

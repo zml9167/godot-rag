@@ -6,7 +6,7 @@ import numpy as np
 from loguru import logger
 from qdrant_client import QdrantClient
 
-from ..utils import PROJECT_DIR, QURANT_DATA_DIR, SYMBOL_INDEX_DIR
+from ..utils import PROJECT_DIR, QURANT_DATA_DIR, SYMBOL_INDEX_PATH, SYMBOL_LOWER_INDEX_PATH
 from .bm25 import BM25_INDEX_DIR
 from .qdrant import COLLECTION_NAME, VECTOR_DIM, chunk_id_to_point_id
 
@@ -36,6 +36,19 @@ class ValidationErrors:
         if self.count > len(self.messages):
             logger.error(f"... 其余 {self.count - len(self.messages)} 条错误已省略")
         raise IndexValidationError(f"索引校验失败：{self.count} 个问题")
+
+
+def _check_vector(vector, name: str, chunk_id: str, errors: ValidationErrors) -> None:
+    """校验单个命名向量：维度、有限性、归一化。"""
+    arr = np.asarray(vector, dtype=np.float32)
+    if arr.shape != (VECTOR_DIM,):
+        errors.add(f"Qdrant {name} 向量维度异常：{chunk_id} shape={arr.shape}")
+    elif not np.isfinite(arr).all():
+        errors.add(f"Qdrant {name} 向量含 NaN/Inf：{chunk_id}")
+    else:
+        norm = float(np.linalg.norm(arr))
+        if abs(norm - 1.0) > 1e-3:
+            errors.add(f"Qdrant {name} 向量未归一化：{chunk_id} norm={norm:.6f}")
 
 
 def _load_chunks(chunks_path: Path, errors: ValidationErrors):
@@ -72,6 +85,9 @@ def _load_chunks(chunks_path: Path, errors: ValidationErrors):
                         f"（期望 {field_type.__name__}）"
                     )
 
+            if isinstance(chunk.get("content"), str) and not chunk["content"].strip():
+                errors.add(f"chunks.jsonl:{lineno}: content 为空白")
+
             chunks[chunk_id] = chunk
             order.append(chunk_id)
 
@@ -91,11 +107,21 @@ def _validate_qdrant(chunks, errors: ValidationErrors) -> int:
         info = client.get_collection(COLLECTION_NAME)
         vector_params = info.config.params.vectors
         if isinstance(vector_params, dict):
-            size = next(iter(vector_params.values())).size
+            # named vectors：title/content 配置都必须存在且维度一致
+            for name in ("content", "title"):
+                params = vector_params.get(name)
+                if params is None:
+                    errors.add(f"Qdrant collection 缺少 {name} 向量配置")
+                elif params.size != VECTOR_DIM:
+                    errors.add(
+                        f"Qdrant {name} 向量维度 {params.size} != 期望 {VECTOR_DIM}"
+                    )
         else:
-            size = vector_params.size
-        if size != VECTOR_DIM:
-            errors.add(f"Qdrant 向量维度 {size} != 期望 {VECTOR_DIM}")
+            # 旧的单未命名向量索引：检索侧按 named vectors（using=...）查询会失败
+            errors.add(
+                f"Qdrant collection 是单一未命名向量格式（维度 {vector_params.size}），"
+                "缺少 title/content 配置，请重建索引"
+            )
 
         count = client.count(COLLECTION_NAME, exact=True).count
         if count != len(chunks):
@@ -133,24 +159,19 @@ def _validate_qdrant(chunks, errors: ValidationErrors) -> int:
                 # 从 chunks.jsonl 取，Qdrant 不做第二份存储），因此这里
                 # 不比对 source/header_path/chunk_type/content。
 
+                # named vectors 合同：content 必须存在；title 可缺省
+                # （空 header_path 的 chunk 建索引时不生成 title 向量），
+                # 存在则一并校验维度/有限性/归一化
                 vector = point.vector
-                if isinstance(vector, dict):
-                    vector = vector.get("") or next(iter(vector.values()), None)
-                if vector is None:
+                if not isinstance(vector, dict):
                     errors.add(f"Qdrant 向量缺失：{chunk_id}")
                     continue
-
-                arr = np.asarray(vector, dtype=np.float32)
-                if arr.shape != (VECTOR_DIM,):
-                    errors.add(f"Qdrant 向量维度异常：{chunk_id} shape={arr.shape}")
-                elif not np.isfinite(arr).all():
-                    errors.add(f"Qdrant 向量含 NaN/Inf：{chunk_id}")
+                if "content" not in vector:
+                    errors.add(f"Qdrant 缺少 content 向量：{chunk_id}")
                 else:
-                    norm = float(np.linalg.norm(arr))
-                    if abs(norm - 1.0) > 1e-3:
-                        errors.add(
-                            f"Qdrant 向量未归一化：{chunk_id} norm={norm:.6f}"
-                        )
+                    _check_vector(vector["content"], "content", chunk_id, errors)
+                if "title" in vector:
+                    _check_vector(vector["title"], "title", chunk_id, errors)
 
             if offset is None:
                 break
@@ -223,35 +244,43 @@ def _validate_bm25(order, errors: ValidationErrors) -> int:
 
 
 def _validate_symbol(chunks, errors: ValidationErrors):
-    path = SYMBOL_INDEX_DIR / "symbol_index.json"
-    if not path.exists():
-        errors.add(f"符号索引文件不存在：{path}")
-        return 0, 0
-    if path.stat().st_size == 0:
-        errors.add(f"符号索引文件为空：{path}")
-        return 0, 0
+    for path in (SYMBOL_INDEX_PATH, SYMBOL_LOWER_INDEX_PATH):
+        if not path.exists():
+            errors.add(f"符号索引文件不存在：{path}")
+            return 0, 0
+        if path.stat().st_size == 0:
+            errors.add(f"符号索引文件为空：{path}")
+            return 0, 0
 
-    with open(path, encoding="utf-8") as f:
+    with open(SYMBOL_INDEX_PATH, encoding="utf-8") as f:
         symbol_index = json.load(f)
 
-    if not isinstance(symbol_index, dict) or not symbol_index:
-        errors.add("符号索引不是非空 JSON 对象")
-        return 0, 0
+    with open(SYMBOL_LOWER_INDEX_PATH, encoding="utf-8") as f:
+        symbol_lower_index = json.load(f)
+
+    for index in (symbol_index, symbol_lower_index):
+        if not isinstance(index, dict) or not index:
+            errors.add("符号索引不是非空 JSON 对象")
+            return 0, 0
 
     referenced = set()
-    for symbol, chunk_ids in symbol_index.items():
+    index_path = [SYMBOL_INDEX_PATH, SYMBOL_LOWER_INDEX_PATH]
+    for i, index in enumerate((symbol_index, symbol_lower_index)):
+        for symbol, chunk_ids in index.items():
+            if not isinstance(chunk_ids, list) or not chunk_ids:
+                errors.add(f"索引 {index_path[i]} 符号索引 {symbol} 的 value 不是非空列表")
+                continue
+            for chunk_id in chunk_ids:
+                if not isinstance(chunk_id, str):
+                    errors.add(f"索引 {index_path[i]} 符号索引 {symbol} 含非字符串 chunk_id")
+                    continue
+                if chunk_id not in chunks:
+                    errors.add(f"索引 {index_path[i]} 符号索引 {symbol} 引用了不存在的 chunk_id：{chunk_id}")
+                referenced.add(chunk_id)
+
+    for symbol, chunk_ids in symbol_lower_index.items():
         if symbol != symbol.lower():
             errors.add(f"符号索引 key 不是小写：{symbol}")
-        if not isinstance(chunk_ids, list) or not chunk_ids:
-            errors.add(f"符号索引 {symbol} 的 value 不是非空列表")
-            continue
-        for chunk_id in chunk_ids:
-            if not isinstance(chunk_id, str):
-                errors.add(f"符号索引 {symbol} 含非字符串 chunk_id")
-                continue
-            if chunk_id not in chunks:
-                errors.add(f"符号索引 {symbol} 引用了不存在的 chunk_id：{chunk_id}")
-            referenced.add(chunk_id)
 
     return len(symbol_index), len(referenced)
 
