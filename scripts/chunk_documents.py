@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from loguru import logger
 from chunkana import ChunkConfig, chunk_markdown
+from chunkana.adaptive_sizing import AdaptiveSizeConfig
 
 from .libs.utils import PROJECT_DIR, CHUNKS_PATH, DOCS_DIRS
 
@@ -26,13 +27,18 @@ def norm(text: str) -> list[str]:
 
 if __name__ == "__main__":
     logger.add(LOG_PATH, encoding="utf-8")
-    config = ChunkConfig(max_chunk_size = 8192,strategy_override="structural")
+    config = ChunkConfig(
+        strategy_override="structural",
+        use_adaptive_sizing = True,
+        adaptive_config=AdaptiveSizeConfig(base_size=2048)
+        )
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_PATH.write_text('')
     chunk_count = 0
     doc_count = 0
     mismatch_docs = 0
     blank_only_docs = 0
+    blank_chunks = 0
     for d in DOCS_DIRS:
         doc_dir = DOCS_SOURCE / d
         print(doc_dir)
@@ -74,6 +80,15 @@ if __name__ == "__main__":
                 # 行内容完全一致，仅空行/结尾差异——不影响 RAG 质量，只计数不刷屏
                 blank_only_docs += 1
             for c in chunks:
+                if not c.content.strip():
+                    # 空白 chunk 无检索价值且下游 API 拒绝空串：跳过不写入。
+                    # 内容丢失由上面的重建一致性校验兜底，空白 chunk 不影响它
+                    blank_chunks += 1
+                    logger.warning(
+                        f"{f.relative_to(DOCS_SOURCE)}: 跳过空白 chunk"
+                        f"（行 {c.start_line}-{c.end_line}）"
+                    )
+                    continue
                 if isinstance(c.metadata['header_path'], list):
                     header_path = c.metadata['header_path']
                 elif isinstance(c.metadata['header_path'], str):
@@ -92,5 +107,6 @@ if __name__ == "__main__":
                 chunk_count += 1
     logger.info(
         f"已写入chunk {chunk_count}；校验 {doc_count} 个文档，"
-        f"{mismatch_docs} 个重建不一致，{blank_only_docs} 个仅空行差异"
+        f"{mismatch_docs} 个重建不一致，{blank_only_docs} 个仅空行差异，"
+        f"跳过 {blank_chunks} 个空白 chunk"
     )

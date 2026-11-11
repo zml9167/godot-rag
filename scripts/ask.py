@@ -1,9 +1,9 @@
 from .retrieve import retrieve
 from .generate import generate_answer
 
-def ask(query: str, top_k: int = 6) -> dict:
+def ask(query: str) -> dict:
     # 1. 检索
-    chunks = retrieve(query, top_k=top_k)
+    chunks = retrieve(query)
 
     # 2. 如果检索结果为空或分数过低，直接拒答
     if not chunks:

@@ -1,32 +1,36 @@
 import re
 
 
-def pattern_of_signals(pattern: str = r'([A-Za-z_]+)') -> str:
+def pattern_of_signals(pattern: str = r'([a-z0-9_]+)') -> str:
     return r'\*\*' + pattern + r'\*\*\([^:]+:\s+\{ref\}`[^<]+<[^>]+>`\)'
 
 
-def pattern_of_enumerations(pattern: str = r'([A-Za-z_]+)') -> str:
-    # 类名槽 [A-Za-z0-9_]+：Godot 类名普遍含数字（Node2D/Vector3/CharacterBody2D）
+def pattern_of_enumerations(pattern: str = r'([A-Z][A-Za-z0-9_]*)') -> str:
+    # 大写开头、无下划线：严格匹配 Godot 类名形态（Node2D/ExpandMode/GLTFCamera）
     return r':ref:`' + pattern + r'<[A-Za-z0-9_]+>`'
 
 
-def pattern_of_property(pattern: str = r'([a-z_]+)') -> str:
+def pattern_of_property(pattern: str = r'([a-z0-9_]+)') -> str:
     return r'\{ref\}`[A-Za-z0-9_]+<[A-Za-z0-9_]+>`\s+\*\*' + pattern + r'\*\*'
 
 
-def pattern_of_constant(pattern: str = r'([A-Z_]+)') -> str:
+def pattern_of_constant(pattern: str = r'([A-Z0-9_]+)') -> str:
     return r'\*\*' + pattern + r'\*\*\s+=\s+'
 
 
-def pattern_of_method(pattern: str = r'([A-Za-z_]+)') -> str:
-    return r'\{ref\}`[A-Za-z0-9_]+<[A-Za-z0-9_]+>`\s+\*\*[\\]*'+ pattern + r'\*\*\(\)'
+def pattern_of_method(pattern: str = r'([a-z0-9_]+)') -> str:
+    # 通用方法声明：**name**( / **name** ( ... )，不要求任何前缀
+    # （classref-method 声明行有 {{ }} / {ref}`类型<类>` / 🔗 等多种前后缀形态）
+    return r'\*\*[\\]*' + pattern + r'\*\*\s*\('
 
 
 def get_symbol_from_clases_content(content: str):
-    """从 chunk 的 content 中提取符号"""
+    """从 chunk 的 content 中提取成员符号（方法/属性/常量/信号）。
+
+    不含 enumerations：:ref:`类名<...>` 的链接文本是类名来源，类名改由
+    header_path 提取（见 symbol.extract_symbols），避免内容引用把海量
+    chunk 挂到核心类型符号上（曾导致 bool 挂 776 个 chunk）。"""
     symbols = set()
-    for m in re.findall(pattern_of_enumerations(), content):
-        symbols.add(m)
     for m in re.findall(pattern_of_property(), content):
         symbols.add(m)
     for m in re.findall(pattern_of_signals(), content):

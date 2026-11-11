@@ -54,15 +54,6 @@ def validate_pipeline_scripts():
         )
 
 
-def normalize_repository_url(url):
-    url = url.strip()
-    if url.startswith("git@github.com:"):
-        url = url[len("git@github.com:") :]
-    elif "github.com/" in url:
-        url = url.split("github.com/", 1)[1]
-    return url.removesuffix(".git").strip("/")
-
-
 def prepare_docs_repository():
     if not DOCS_DIR.exists():
         print(f"Cloning Godot documentation into {DOCS_DIR}", flush=True)

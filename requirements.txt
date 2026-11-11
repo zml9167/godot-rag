@@ -5,7 +5,6 @@ loguru
 portalocker
 rank-bm25
 qdrant-client
-transformers
-sentence-transformers
+requests
+tokenizers
 openai
-ipspot
