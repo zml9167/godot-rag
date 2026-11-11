@@ -1,7 +1,6 @@
 import re
 import json
 import pickle
-from pathlib import Path
 from qdrant_client import QdrantClient
 
 from .libs.tokenizer import tokenize
@@ -9,7 +8,6 @@ from .libs.utils import PROJECT_DIR, QURANT_DATA_DIR, STOPWORDS, SYMBOL_INDEX_PA
 from .libs.pattern_utils import match_sybol_from_classes_content
 
 # ============ 全局加载（进程启动时加载一次） ============
-PROJECT_DIR = Path(__file__).resolve().parents[1]
 CHUNKS_PATH = PROJECT_DIR / "data/chunks.jsonl"
 BM25_DIR = PROJECT_DIR / "data/bm25_index"
 COLLECTION_NAME = "godot_docs"
@@ -61,7 +59,8 @@ def get_symbol_order(sym: str, chunk) -> tuple:
                 order_header_path = False
                 break
     order_source = sym.lower() not in chunk['source'].lower()
-    order_content = match_sybol_from_classes_content(sym, chunk["content"])
+    # 内容命中集合转 bool：命中（非空）→ False → 排前，与 header/source 约定一致
+    order_content = not match_sybol_from_classes_content(sym, chunk["content"])
     return (order_header_path, order_source, order_content, order_chunk_type)
 
 

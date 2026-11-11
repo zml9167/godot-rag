@@ -12,8 +12,11 @@ LOG_PATH = PROJECT_DIR / f"logs/{Path(__file__).stem}.log"
 
 
 def strip_grid_borders(text: str) -> str:
+    # 删除 RST transition 转换残留的下划线分隔行（\n_______\n，连同换行）
+    result = re.sub(r'(?m)^[ \t]*_{10,}[ \t]*$\n?', '', text)
     # 删除所有 +---+---+ 边框行（连同换行）
-    return re.sub(r'(?m)^\s*\+[-=+]+\+\s*$\n?', '', text)
+    result = re.sub(r'(?m)^\s*\+[-=+]+\+\s*$\n?', '', result)
+    return result
 
 
 def run(f: Path):
@@ -30,7 +33,7 @@ def run(f: Path):
 
 
 if __name__ == "__main__":
-    logger.add(LOG_PATH)
+    logger.add(LOG_PATH, encoding="utf-8")
     with Pool() as pool:
         for d in DOCS_DIRS:
             doc_dir = DOCS_SOURCE / d

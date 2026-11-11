@@ -1,14 +1,9 @@
-.venv/
 .vscode/
 __pycache__
 logs/
 docs-source/
-godot-docs-*/
+godot-docs*/
 data/
-chunk_mismatch_reports/
 models_cache/
-*.ps1
-*.whl
-_temp*
 misses.json
 .python-version

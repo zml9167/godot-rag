@@ -13,9 +13,6 @@ CHUNKANA_EVAL_RST_FENCE = "```eval_rst__"
 CURRENT_PATH = Path(__file__).resolve()
 DOCS_SOURCE = PROJECT_DIR / DOCS_DIR_NAME
 LOG_PATH = PROJECT_DIR / f"logs/{CURRENT_PATH.stem}.log"
-MISMATCH_REPORTS = PROJECT_DIR / "chunk_mismatch_reports"
-
-MISMATCH_REPORTS.mkdir(parents=True, exist_ok=True)
 
 
 def write_chunk(line):
@@ -28,11 +25,14 @@ def norm(text: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    logger.add(LOG_PATH)
+    logger.add(LOG_PATH, encoding="utf-8")
     config = ChunkConfig(max_chunk_size = 8192,strategy_override="structural")
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_PATH.write_text('')
     chunk_count = 0
+    doc_count = 0
+    mismatch_docs = 0
+    blank_only_docs = 0
     for d in DOCS_DIRS:
         doc_dir = DOCS_SOURCE / d
         print(doc_dir)
@@ -51,20 +51,46 @@ if __name__ == "__main__":
                     chunk.content,
                 )
             chunks_content = '\n'.join([c.content for c in chunks])
-            if norm(content) != norm(chunks_content):
-                logger.warning(f"Mismatch {str(f)}")
-                (MISMATCH_REPORTS / f.name).write_text(chunks_content, encoding='utf-8')
+            orig_lines = norm(content)
+            new_lines = norm(chunks_content)
+            doc_count += 1
+            if orig_lines != new_lines:
+                mismatch_docs += 1
+                # 空行差异已被 norm 过滤；用非空行拼接后的长度判断是否真丢了内容，
+                # 否则原文里的空行在重建中增删会造成误报
+                lost = len("\n".join(orig_lines)) - len("\n".join(new_lines))
+                rel = f.relative_to(DOCS_SOURCE)
+                if lost > 0:
+                    logger.warning(
+                        f"{rel}: 切分重建后内容丢失 {lost} 字符"
+                        f"（非空行 {len(orig_lines)} -> {len(new_lines)}）"
+                    )
+                else:
+                    logger.warning(
+                        f"{rel}: 切分重建与原文不一致"
+                        f"（非空行 {len(orig_lines)} -> {len(new_lines)}，长度差 {lost:+d} 字符）"
+                    )
+            elif content != chunks_content:
+                # 行内容完全一致，仅空行/结尾差异——不影响 RAG 质量，只计数不刷屏
+                blank_only_docs += 1
             for c in chunks:
                 if isinstance(c.metadata['header_path'], list):
                     header_path = c.metadata['header_path']
                 elif isinstance(c.metadata['header_path'], str):
                     header_path = c.metadata['header_path'].strip('/').split('/')
                 else:
-                    logger.error(f"Unknown header_path type {f}")
+                    bad_header_path = c.metadata['header_path']
+                    logger.error(
+                        f"Unknown header_path type {type(bad_header_path).__name__}: "
+                        f"{bad_header_path!r} (file: {f})"
+                    )
                     continue
                 source = f.relative_to(DOCS_SOURCE).as_posix()
                 chunk_id = source + ':' + str(c.start_line) + '-' + str(c.end_line)
                 line = {"chunk_id": chunk_id, "source": source, "header_path": header_path, "content": c.content, "start_line": c.start_line, "end_line": c.end_line, "metadata": c.metadata, "chunk_type": d}
                 write_chunk(line)
                 chunk_count += 1
-    logger.info(f"已写入 {chunk_count} 条chunk")
+    logger.info(
+        f"已写入chunk {chunk_count}；校验 {doc_count} 个文档，"
+        f"{mismatch_docs} 个重建不一致，{blank_only_docs} 个仅空行差异"
+    )
