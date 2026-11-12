@@ -1,4 +1,3 @@
-import re
 import json
 import time
 from loguru import logger
@@ -47,8 +46,7 @@ def build(chunks_path: Path = CHUNKS_PATH):
                 symbol_to_chunks.setdefault(sym, []).append(c["chunk_id"])
 
     for key, ids in symbol_to_chunks.items():
-        if re.search(r'[A-Z]+', key):
-            symbol_lower_to_chunks.setdefault(key.lower(), []).extend(ids)
+        symbol_lower_to_chunks.setdefault(key.lower(), []).extend(ids)
 
     with open(SYMBOL_INDEX_PATH, "w", encoding="utf-8") as f:
         json.dump(symbol_to_chunks, f, ensure_ascii=False)

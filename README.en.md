@@ -53,9 +53,9 @@ Create a virtual environment at the repository root and install the dependencies
 pip install -r requirements.txt
 ```
 
-`requirements.txt` does not include PyTorch: both embedding and reranking now go through the SiliconFlow API, so this project no longer depends on a GPU, PyTorch, or local model weights.
+`requirements.txt` does not include PyTorch: embedding and reranking only support the SiliconFlow API, so this project no longer depends on a GPU, PyTorch, or local model weights.
 
-**Embedding and reranking depend on the SiliconFlow API; export the key first:**
+**Embedding and reranking only support the SiliconFlow API (no other providers or local models); export the key first:**
 
 ```bash
 export SILICONFLOW_API_KEY="your-api-key"
@@ -125,7 +125,7 @@ Command-line example:
 python -m scripts.ask "How should I pass the delta parameter to move_and_slide?"
 ```
 
-Generation uses an OpenAI-compatible API configured through environment variables: `OPENAI_BASE_URL` (**required**, service address; cloud DeepSeek is `https://api.deepseek.com`, local Ollama is `http://localhost:11434/v1`), `OPENAI_API_KEY` (service key; when missing a placeholder is used instead — local deployments don't check it, cloud endpoints return 401), and `OPENAI_MODEL` (model name, **required**). Generation runs with a low temperature (`temperature=0.1`) and `max_tokens=1500` to reduce free-form drift. The prompt requires answers to rely only on the retrieved chunks, cite `[来源: section path]`, and state clearly when the context is insufficient.
+Generation uses an OpenAI-compatible API (only generation supports a custom service address; embedding and reranking only support SiliconFlow) configured through environment variables: `OPENAI_BASE_URL` (**required**, service address; cloud DeepSeek is `https://api.deepseek.com`, local Ollama is `http://localhost:11434/v1`), `OPENAI_API_KEY` (service key; when missing a placeholder is used instead — local deployments don't check it, cloud endpoints return 401), and `OPENAI_MODEL` (model name, **required**). Generation runs with a low temperature (`temperature=0.1`) and `max_tokens=1500` to reduce free-form drift. The prompt requires answers to rely only on the retrieved chunks, cite `[来源: section path]`, and state clearly when the context is insufficient.
 
 ## Evaluation
 

@@ -5,7 +5,7 @@ def ask(query: str) -> dict:
     # 1. 检索
     chunks = retrieve(query)
 
-    # 2. 如果检索结果为空或分数过低，直接拒答
+    # 2. 如果检索结果为空，直接拒答
     if not chunks:
         return {
             "answer": "文档中没有找到相关内容。",

@@ -53,9 +53,9 @@
 pip install -r requirements.txt
 ```
 
-`requirements.txt` 不包含 PyTorch：嵌入与重排序均已改为调用 SiliconFlow API，本项目不再依赖 GPU、PyTorch 或本地模型权重。
+`requirements.txt` 不包含 PyTorch：嵌入与重排序仅支持 SiliconFlow API，本项目不再依赖 GPU、PyTorch 或本地模型权重。
 
-**嵌入与重排序依赖 SiliconFlow API，需要先导出密钥：**
+**嵌入与重排序仅支持 SiliconFlow API（不支持其他服务商或本地模型），需要先导出密钥：**
 
 ```bash
 export SILICONFLOW_API_KEY="你的密钥"
@@ -125,7 +125,7 @@ python -m scripts.run_pipeline
 python -m scripts.ask "move_and_slide 的 delta 参数怎么传？"
 ```
 
-生成部分使用 OpenAI 兼容接口，通过环境变量配置：`OPENAI_BASE_URL`（**必填**，服务地址；云端 DeepSeek 为 `https://api.deepseek.com`，本地 Ollama 为 `http://localhost:11434/v1`）、`OPENAI_API_KEY`（服务密钥；缺失时以占位值放行——本地部署不校验，云端会返回 401）、`OPENAI_MODEL`（模型名，**必填**）。生成使用低温度（`temperature=0.1`）与 `max_tokens=1500` 以减少自由发挥。提示词要求只依据检索片段回答、标注 `[来源: 章节路径]`，资料不足时明确说明。
+生成部分使用 OpenAI 兼容接口（仅生成部分支持自定义服务地址，嵌入与重排序仅支持 SiliconFlow），通过环境变量配置：`OPENAI_BASE_URL`（**必填**，服务地址；云端 DeepSeek 为 `https://api.deepseek.com`，本地 Ollama 为 `http://localhost:11434/v1`）、`OPENAI_API_KEY`（服务密钥；缺失时以占位值放行——本地部署不校验，云端会返回 401）、`OPENAI_MODEL`（模型名，**必填**）。生成使用低温度（`temperature=0.1`）与 `max_tokens=1500` 以减少自由发挥。提示词要求只依据检索片段回答、标注 `[来源: 章节路径]`，资料不足时明确说明。
 
 ## 评估
 
